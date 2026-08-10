@@ -190,14 +190,14 @@ function renderPublishedPreview(values) {
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="index.html" aria-label="Inicio">
+      <a class="brand" href="/" aria-label="Inicio">
         <img src="assets/optimized/fme-04.png" alt="Fray Municipalidad" width="1024" height="684" decoding="async">
       </a>
       <button class="icon-button menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
       <nav class="main-nav" aria-label="Menu principal">
-        <a href="index.html#gobierno-abierto">Gobierno Abierto</a>
+        <a href="/#gobierno-abierto">Gobierno Abierto</a>
         <a href="gabinete.html">Gobierno</a>
       </nav>
     </header>
@@ -205,7 +205,7 @@ function renderPublishedPreview(values) {
     <main>
       <article class="news-detail">
         <header class="news-detail-hero">
-          <a class="back-link" href="index.html">Volver al inicio</a>
+          <a class="back-link" href="/">Volver al inicio</a>
           <p class="kicker">${category}</p>
           <h1>${title}</h1>
           <div class="news-meta">
