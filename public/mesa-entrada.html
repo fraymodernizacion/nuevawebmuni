@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mesa de Entrada Virtual | Municipalidad de Fray Mamerto Esquiú</title>
+    <meta name="description" content="Iniciá, consultá o completá trámites municipales desde la Mesa de Entrada Virtual.">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQeqZc8JIJLR44AuOTRk+kA3MxjEiGg=" crossorigin="">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="mesa-page">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Inicio">
+        <img src="assets/optimized/fme-04.png" alt="Fray Municipalidad" width="1024" height="684" decoding="async">
+      </a>
+      <button class="icon-button menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="main-nav" aria-label="Menu principal">
+        <a href="index.html#gobierno-abierto">Gobierno Abierto</a>
+        <a href="gabinete.html">Gobierno</a>
+      </nav>
+    </header>
+
+    <main class="mesa-shell" data-mesa-app>
+      <nav class="breadcrumb" aria-label="Ruta">
+        <a href="index.html">Inicio</a>
+        <span aria-hidden="true">/</span>
+        <span>Mesa de Entrada Virtual</span>
+      </nav>
+
+      <section class="mesa-hero" data-view="home">
+        <div class="mesa-hero-copy">
+          <p class="kicker">Trámites municipales</p>
+          <h1>Mesa de Entrada Virtual</h1>
+          <p>Iniciá un trámite, realizá una presentación o seguí el estado de una solicitud.</p>
+          <form class="mega-search" data-global-search>
+            <label for="home-search">¿Qué necesitás hacer?</label>
+            <div>
+              <input id="home-search" name="q" type="search" data-need-input placeholder="Ej: No funciona la luz de mi calle">
+              <button class="button" type="submit">Ver opciones</button>
+            </div>
+          </form>
+          <div class="guided-entry" aria-live="polite">
+            <div class="chips" data-home-categories aria-label="Categorías sugeridas"></div>
+            <div class="suggestion-list" data-home-suggestions></div>
+            <div class="guided-links">
+              <button class="outline-button" type="button" data-go="catalogo">Ver catálogo completo</button>
+              <button class="outline-button" type="button" data-start-form="presentacion-general">Ninguna opción coincide con lo que necesito</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mesa-actions" aria-label="Acciones principales">
+        <button type="button" data-go="catalogo" data-focus-search>
+          <span data-icon="file-plus"></span>
+          <strong>Iniciar un trámite</strong>
+          <small>Encontrá el trámite o describí tu pedido.</small>
+        </button>
+        <button type="button" data-go="consulta">
+          <span data-icon="search"></span>
+          <strong>Consultar un trámite</strong>
+          <small>Seguimiento por número, DNI, email o teléfono.</small>
+        </button>
+        <button type="button" data-go="adjuntar">
+          <span data-icon="upload"></span>
+          <strong>Adjuntar documentación</strong>
+          <small>Completá una solicitud ya iniciada.</small>
+        </button>
+        <button type="button" data-go="faq">
+          <span data-icon="help"></span>
+          <strong>Preguntas frecuentes</strong>
+          <small>Respuestas simples y rápidas.</small>
+        </button>
+      </section>
+
+      <section class="mesa-section" id="catalogo" data-view="catalogo" hidden>
+        <div class="section-heading">
+          <p class="kicker">Catálogo</p>
+          <h2>Elegí qué necesitás hacer</h2>
+        </div>
+        <div class="catalog-tools">
+          <label class="field">
+            <span>Buscar trámites</span>
+            <input type="search" data-catalog-search placeholder="Buscar por palabra clave">
+          </label>
+          <div class="chips" data-category-filters aria-label="Categorías"></div>
+        </div>
+        <div class="tramite-grid" data-tramite-list aria-live="polite"></div>
+      </section>
+
+      <section class="mesa-section" id="identificacion" data-view="identificacion" hidden>
+        <div class="wizard-head">
+          <button class="back-link inline" type="button" data-go="home">Volver al inicio</button>
+          <p class="kicker" data-identification-kicker>Paso 2 de 6</p>
+          <h2>Identificación</h2>
+          <div class="progress" aria-hidden="true"><span data-identification-progress></span></div>
+        </div>
+        <div class="identity-layout">
+          <section class="identity-card" data-identification-mode-panel>
+            <h3>¿Para quién estás realizando esta gestión?</h3>
+            <div class="role-options" role="radiogroup" aria-label="Para quién se realiza la gestión">
+              <button class="active" type="button" data-role-option="self">
+                <strong>Para mí</strong>
+                <span>Vos sos la persona titular de la solicitud.</span>
+              </button>
+              <button type="button" data-role-option="other">
+                <strong>Para otra persona</strong>
+                <span>Estás realizando la gestión en representación de otra persona.</span>
+              </button>
+              <button type="button" data-role-option="operator">
+                <strong>Estoy registrando la solicitud como agente municipal</strong>
+                <span>Estás cargando la solicitud para un vecino atendido por otro canal.</span>
+              </button>
+            </div>
+            <button class="catamarca-button" type="button" data-toast="Integración futura con Mi Catamarca preparada">
+              <span data-icon="file-plus"></span>
+              Continuar con Mi Catamarca
+            </button>
+          </section>
+          <form class="identity-card" data-identification-form>
+            <div data-identification-fields></div>
+            <div class="wizard-actions">
+              <button class="outline-button" type="button" data-go="home">Anterior</button>
+              <button class="button" type="button" data-continue-to-form>Continuar</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="mesa-section" id="formulario" data-view="formulario" hidden>
+        <div class="wizard-head">
+          <button class="back-link inline" type="button" data-go="identificacion">Volver a identificación</button>
+          <p class="kicker" data-wizard-kicker>Paso 1 de 4</p>
+          <h2 data-wizard-title>Iniciar solicitud</h2>
+          <div class="progress" aria-hidden="true"><span data-progress-bar></span></div>
+        </div>
+        <form class="wizard-card" data-wizard-form>
+          <div data-wizard-step></div>
+          <div class="wizard-actions">
+            <button class="outline-button" type="button" data-wizard-prev>Anterior</button>
+            <button class="button" type="button" data-wizard-next>Continuar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="mesa-section confirmation" id="confirmacion" data-view="confirmacion" hidden>
+        <div class="success-mark" aria-hidden="true">✓</div>
+        <p class="kicker">Solicitud enviada</p>
+        <h2>Ya recibimos tu trámite</h2>
+        <p>Guardá este número para consultar el estado o adjuntar documentación.</p>
+        <strong class="tracking-number">FME-2026-000001</strong>
+        <div class="confirmation-actions">
+          <button class="button" type="button" data-toast="Comprobante de muestra listo para descargar">Descargar comprobante</button>
+          <button class="outline-button" type="button" data-toast="Enlace de seguimiento copiado">Compartir</button>
+          <button class="outline-button" type="button" data-go="home">Volver al inicio</button>
+        </div>
+      </section>
+
+      <section class="mesa-section" id="consulta" data-view="consulta" hidden>
+        <div class="section-heading">
+          <p class="kicker">Seguimiento</p>
+          <h2>Consultá un trámite</h2>
+        </div>
+        <form class="lookup-card" data-lookup-form>
+          <div class="tabs" role="tablist" aria-label="Tipo de búsqueda">
+            <button type="button" class="active">Número</button>
+            <button type="button">DNI</button>
+            <button type="button">Email</button>
+            <button type="button">Teléfono</button>
+          </div>
+          <label class="field">
+            <span>Dato de búsqueda</span>
+            <input type="text" placeholder="FME-2026-000001">
+          </label>
+          <button class="button" type="submit">Consultar</button>
+        </form>
+        <div class="timeline" data-history-list></div>
+      </section>
+
+      <section class="mesa-section" id="adjuntar" data-view="adjuntar" hidden>
+        <div class="section-heading">
+          <p class="kicker">Documentación</p>
+          <h2>Adjuntá archivos a un trámite</h2>
+        </div>
+        <div class="upload-layout">
+          <form class="lookup-card" data-upload-form>
+            <label class="field">
+              <span>Número de trámite</span>
+              <input type="text" placeholder="FME-2026-000001">
+            </label>
+            <label class="upload-box">
+              <input type="file" multiple>
+              <span data-icon="upload"></span>
+              <strong>Seleccioná o arrastrá archivos</strong>
+              <small>PDF, JPG o PNG hasta 10 MB cada uno.</small>
+            </label>
+            <button class="button" type="submit">Enviar documentación</button>
+          </form>
+          <aside class="sent-docs">
+            <h3>Documentos ya enviados</h3>
+            <ul>
+              <li>DNI frente y dorso <span>30/07/2026</span></li>
+              <li>Nota firmada <span>30/07/2026</span></li>
+            </ul>
+            <h3>Historial</h3>
+            <p>El municipio solicitó documentación complementaria para continuar.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="mesa-section" id="faq" data-view="faq" hidden>
+        <div class="section-heading">
+          <p class="kicker">Ayuda</p>
+          <h2>Preguntas frecuentes</h2>
+        </div>
+        <label class="field">
+          <span>Buscar respuestas</span>
+          <input type="search" data-faq-search placeholder="Escribí una palabra clave">
+        </label>
+        <div class="chips" data-faq-categories></div>
+        <div class="accordion" data-faq-list></div>
+      </section>
+
+      <section class="mesa-section" id="perfil" data-view="perfil" hidden>
+        <div class="profile-head">
+          <span class="avatar" data-user-avatar>MV</span>
+          <div>
+            <p class="kicker">Perfil ciudadano de muestra</p>
+            <h2 data-user-name>María Vecina</h2>
+          </div>
+        </div>
+        <div class="profile-grid" data-user-profile></div>
+      </section>
+
+      <section class="operator-dashboard" id="operador" data-view="operador" hidden>
+        <aside class="operator-sidebar">
+          <strong>Mesa de Entrada</strong>
+          <button class="active" type="button">Bandeja</button>
+          <button type="button">Filtros</button>
+          <button type="button">Reportes</button>
+          <button type="button">Equipo</button>
+        </aside>
+        <section class="operator-main">
+          <div class="operator-top">
+            <div>
+              <p class="kicker">Operador</p>
+              <h2>Panel de gestión</h2>
+            </div>
+            <input type="search" placeholder="Buscar trámite">
+          </div>
+          <div class="metric-grid" data-dashboard-metrics></div>
+          <div class="dashboard-workspace">
+            <div class="chart-card">
+              <h3>Ingresos semanales</h3>
+              <div class="bar-chart" data-weekly-chart></div>
+            </div>
+            <div class="operator-table">
+              <h3>Trámites recientes</h3>
+              <div data-dashboard-table></div>
+            </div>
+            <aside class="detail-drawer">
+              <div class="detail-head">
+                <span class="status-badge info" data-current-status>En gestión</span>
+                <h3 data-detail-number>Sin solicitud seleccionada</h3>
+                <p data-detail-summary>Cuando cargues una solicitud, se va a mostrar acá para que el operador la gestione.</p>
+              </div>
+              <details class="operator-action-panel" open>
+                <summary>Estado del trámite</summary>
+                <form class="internal-assistance-form status-update-form" data-status-form>
+                <label class="field">
+                  <span>Nuevo estado</span>
+                  <select name="estado" required>
+                    <option>Recibido</option>
+                    <option>En revisión</option>
+                    <option>Derivado</option>
+                    <option selected>En gestión</option>
+                    <option>Pendiente de documentación</option>
+                    <option>Resuelto</option>
+                    <option>Cerrado</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Comentario visible para la institución</span>
+                  <textarea name="comentarioVisible" rows="3" required placeholder="Ej: La solicitud fue derivada al área correspondiente."></textarea>
+                </label>
+                <label class="field">
+                  <span>Observación interna</span>
+                  <textarea name="observacionInterna" rows="3" placeholder="No visible para la institución"></textarea>
+                </label>
+                <label class="field">
+                  <span>WhatsApp de contacto</span>
+                  <input name="number" type="tel" value="5493834218946">
+                </label>
+                <label class="check-field internal-check">
+                  <input type="checkbox" name="notifyStatus" value="1">
+                  <span>Notificar este cambio por WhatsApp</span>
+                </label>
+                <div class="derivation-preview">
+                  <strong>Mensaje de estado</strong>
+                  <p data-status-preview>Elegí el estado y escribí el comentario que verá la institución.</p>
+                </div>
+                <button class="button" type="submit">Actualizar estado</button>
+                </form>
+              </details>
+              <details class="operator-action-panel">
+                <summary>Clasificación interna</summary>
+                <form class="internal-assistance-form">
+                <fieldset class="choice-field multi-choice">
+                  <legend>Tipo de asistencia</legend>
+                  <label><input type="checkbox" name="asistencia[]" value="Transporte"> Transporte</label>
+                  <label><input type="checkbox" name="asistencia[]" value="Desmalezado / limpieza"> Desmalezado / limpieza</label>
+                  <label><input type="checkbox" name="asistencia[]" value="Poda o arbolado"> Poda o arbolado</label>
+                  <label><input type="checkbox" name="asistencia[]" value="Sonido / logística"> Sonido / logística</label>
+                  <label><input type="checkbox" name="asistencia[]" value="Personal de tránsito"> Personal de tránsito</label>
+                  <label><input type="checkbox" name="asistencia[]" value="Autorización"> Autorización</label>
+                  <label><input type="checkbox" name="asistencia[]" value="Visita o actividad educativa"> Visita o actividad educativa</label>
+                  <label><input type="checkbox" name="asistencia[]" value="Otra"> Otra</label>
+                </fieldset>
+                <label class="field">
+                  <span>Fecha del evento o necesidad</span>
+                  <input type="date" name="fechaEvento" data-event-date>
+                </label>
+                <label class="field">
+                  <span>Cantidad aproximada de personas</span>
+                  <input type="text" placeholder="Ej: 120 alumnos y 15 docentes">
+                </label>
+                <label class="field">
+                  <span>Ubicación o referencia interna</span>
+                  <input type="text" placeholder="Sede, lugar del evento o referencia">
+                </label>
+                <label class="field">
+                  <span>Observaciones internas</span>
+                  <textarea rows="4" placeholder="No visible para la institución"></textarea>
+                </label>
+                <button class="button" type="button" data-toast="Clasificación interna guardada en modo demostración">Guardar clasificación</button>
+                </form>
+              </details>
+              <details class="operator-action-panel">
+                <summary>Derivar solicitud</summary>
+                <form class="internal-assistance-form derivation-form" data-derivation-form>
+                <label class="field">
+                  <span>Área destinataria</span>
+                  <select name="area" required>
+                    <option value="" selected disabled>Seleccioná el área</option>
+                    <option>Intendencia</option>
+                    <option>Secretaría de Gobierno</option>
+                    <option>Secretaría de Obras y Servicios Públicos</option>
+                    <option>Secretaría de Producción y Medio Ambiente</option>
+                    <option>Secretaría de Desarrollo Social</option>
+                    <option>Secretaría de Turismo, Deporte, Cultura y Emprendedurismo</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Solicitud original de la institución</span>
+                  <textarea name="solicitudOriginal" rows="4" data-original-request readonly>La solicitud original aparecerá acá cuando la institución la cargue.</textarea>
+                </label>
+                <label class="check-field internal-check">
+                  <input type="checkbox" name="includeSolicitud" value="1" checked>
+                  <span>Incluir solicitud original en la notificación al área</span>
+                </label>
+                <label class="field">
+                  <span>Nota interna del operador</span>
+                  <textarea name="observacion" rows="4" required placeholder="Agregá una indicación interna para el área destinataria"></textarea>
+                </label>
+                <label class="field">
+                  <span>Nota original</span>
+                  <input name="notaUrl" type="url" placeholder="Se completa cuando la institución adjunta la nota">
+                </label>
+                <label class="field">
+                  <span>WhatsApp de destino</span>
+                  <input name="number" type="tel" value="5493834218946" required>
+                </label>
+                <div class="derivation-preview">
+                  <strong>Mensaje a enviar</strong>
+                  <p data-derivation-preview>Seleccioná un área y agregá una observación para preparar la notificación.</p>
+                </div>
+                <button class="button" type="submit">Derivar y notificar por WhatsApp</button>
+                </form>
+              </details>
+              <details class="operator-action-panel">
+                <summary>Historial</summary>
+                <div class="timeline compact" data-dashboard-timeline></div>
+              </details>
+            </aside>
+          </div>
+        </section>
+      </section>
+
+      <nav class="mesa-bottom-nav" aria-label="Vistas de muestra">
+        <button type="button" data-go="home">Inicio</button>
+        <button type="button" data-go="catalogo">Catálogo</button>
+        <button type="button" data-go="perfil">Perfil</button>
+        <button type="button" data-go="operador">Operador</button>
+      </nav>
+    </main>
+
+    <div class="toast" data-toast-box role="status" aria-live="polite" hidden></div>
+
+    <footer class="site-footer">
+      <img src="assets/optimized/fme-04.png" alt="" width="1024" height="684" loading="lazy" decoding="async">
+      <p>Municipalidad de Fray Mamerto Esquiú</p>
+      <a href="#">fraymunicipalidad.gob.ar</a>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="mesa-entrada.js"></script>
+  </body>
+</html>

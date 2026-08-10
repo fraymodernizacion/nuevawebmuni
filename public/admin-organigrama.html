@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin de Organigrama - Municipalidad de Fray Mamerto Esquiú</title>
+    <meta name="description" content="Prototipo de panel para editar áreas, cargos y autoridades del organigrama municipal.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="admin-body">
+    <header class="admin-header">
+      <a class="brand" href="index.html" aria-label="Inicio">
+        <img src="assets/optimized/fme-04.png" alt="Fray Municipalidad" width="1024" height="684" decoding="async">
+      </a>
+      <nav class="admin-header-actions" aria-label="Accesos administrativos">
+        <a class="outline-light" href="admin-noticias.html">Noticias</a>
+        <a class="outline-light" href="admin-boletines.html">Boletines</a>
+        <a class="outline-light" href="admin-contrataciones.html">Contrataciones</a>
+        <a class="outline-light" href="admin-usuarios.html">Usuarios</a>
+        <a class="outline-light" href="gabinete.html#organigrama">Ver organigrama</a>
+      </nav>
+    </header>
+
+    <main class="admin-shell org-admin-shell">
+      <section class="admin-sidebar" aria-label="Áreas del organigrama">
+        <div>
+          <p class="kicker">Estructura municipal</p>
+          <h1>Organigrama</h1>
+        </div>
+        <button class="button" type="button">Nueva área</button>
+        <div class="admin-news-list">
+          <article class="admin-news-item active">
+            <span class="status open">Principal</span>
+            <h2>Intendencia</h2>
+            <p>8 cargos cargados</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status open">Activa</span>
+            <h2>Secretaría de Gobierno</h2>
+            <p>9 cargos cargados</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status open">Activa</span>
+            <h2>Secretaría de Hacienda</h2>
+            <p>8 cargos cargados</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-editor" aria-label="Editor de área">
+        <div class="admin-toolbar">
+          <div>
+            <p class="kicker">Editor</p>
+            <h2>Editar área</h2>
+          </div>
+          <div class="admin-actions">
+            <button class="outline-light" type="button">Guardar cambios</button>
+            <button class="button" type="button">Publicar</button>
+          </div>
+        </div>
+
+        <form class="admin-form">
+          <div class="admin-form-grid">
+            <label>
+              Nombre del área
+              <input type="text" value="Intendencia">
+            </label>
+            <label>
+              Orden
+              <input type="number" value="1" min="1">
+            </label>
+          </div>
+          <div class="admin-form-grid">
+            <label>
+              Estado
+              <select>
+                <option>Activa</option>
+                <option>Oculta</option>
+              </select>
+            </label>
+            <label>
+              Jerarquía visual
+              <select>
+                <option>Principal</option>
+                <option>Área común</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-field">
+            <span>Cargos y autoridades</span>
+            <div class="org-admin-list">
+              <article class="org-admin-person featured">
+                <div>
+                  <strong>Benavidez Maria Alejandra</strong>
+                  <span>Intendenta</span>
+                  <a href="mailto:intendencia@fraymunicipalidad.gob.ar">intendencia@fraymunicipalidad.gob.ar</a>
+                </div>
+                <div class="org-admin-row-actions">
+                  <button class="outline-light" type="button">Editar</button>
+                  <button class="outline-light" type="button">Quitar</button>
+                </div>
+              </article>
+              <article class="org-admin-person">
+                <div>
+                  <strong>Aguero Orellana Carla Romina</strong>
+                  <span>Directora de Privada</span>
+                </div>
+                <div class="org-admin-row-actions">
+                  <button class="outline-light" type="button">Editar</button>
+                  <button class="outline-light" type="button">Quitar</button>
+                </div>
+              </article>
+              <article class="org-admin-person">
+                <div>
+                  <strong>Villacorta Elvira del Valle</strong>
+                  <span>Directora de Protocolo</span>
+                  <a href="mailto:protocolo@fraymunicipalidad.gob.ar">protocolo@fraymunicipalidad.gob.ar</a>
+                </div>
+                <div class="org-admin-row-actions">
+                  <button class="outline-light" type="button">Editar</button>
+                  <button class="outline-light" type="button">Quitar</button>
+                </div>
+              </article>
+            </div>
+            <button class="button org-admin-add" type="button">Agregar cargo</button>
+          </div>
+
+          <div class="org-admin-person-form">
+            <h3>Editar cargo seleccionado</h3>
+            <div class="admin-form-grid">
+              <label>
+                Nombre y apellido
+                <input type="text" value="Benavidez Maria Alejandra">
+              </label>
+              <label>
+                Cargo
+                <input type="text" value="Intendenta">
+              </label>
+            </div>
+            <div class="admin-form-grid">
+              <label>
+                Email institucional
+                <input type="email" value="intendencia@fraymunicipalidad.gob.ar">
+              </label>
+              <label>
+                Tipo de cargo
+                <select>
+                  <option>Autoridad principal</option>
+                  <option>Cargo dependiente</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

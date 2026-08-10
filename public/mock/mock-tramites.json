@@ -1,0 +1,90 @@
+[
+  {
+    "id": "presentacion-general",
+    "nombre": "Presentación general",
+    "descripcion": "Usá esta opción cuando ninguna alternativa coincide exactamente con lo que necesitás.",
+    "icono": "file-text",
+    "categoria": "Presentaciones",
+    "color": "#d93397",
+    "tiempoEstimado": "8 minutos",
+    "requiereAutenticacion": false,
+    "documentacionRequerida": ["Datos de contacto", "Detalle de la solicitud"]
+  },
+  {
+    "id": "habilitacion-comercial",
+    "nombre": "Alta de contribuyente comercial",
+    "descripcion": "Registrá un comercio, emprendimiento o actividad económica para iniciar la habilitación municipal.",
+    "icono": "store",
+    "categoria": "Comercio",
+    "color": "#2e75b8",
+    "tiempoEstimado": "14 minutos",
+    "requiereAutenticacion": false,
+    "documentacionRequerida": ["DNI", "Constancia de CUIT", "Código de actividad ARCA", "Ubicación del comercio"]
+  },
+  {
+    "id": "asistencia-instituciones",
+    "nombre": "Solicitar asistencia para una institución",
+    "descripcion": "Pedí colaboración municipal para una escuela u organismo del departamento.",
+    "icono": "file-plus",
+    "categoria": "Instituciones",
+    "color": "#2e75b8",
+    "tiempoEstimado": "10 minutos",
+    "requiereAutenticacion": false,
+    "documentacionRequerida": ["Institución", "Detalle de la solicitud", "Nota o respaldo si corresponde"]
+  },
+  {
+    "id": "reclamo-servicios",
+    "nombre": "Avisar por un problema en la vía pública",
+    "descripcion": "Informá luminarias, pérdidas de agua, residuos, calles o espacios públicos que necesitan atención.",
+    "icono": "map-pin",
+    "categoria": "Servicios",
+    "color": "#84bd1a",
+    "tiempoEstimado": "5 minutos",
+    "requiereAutenticacion": false,
+    "documentacionRequerida": ["Ubicación", "Foto opcional"]
+  },
+  {
+    "id": "nota-municipio",
+    "nombre": "Presentar una nota al municipio",
+    "descripcion": "Contanos qué necesitás sin elegir áreas internas. El municipio derivará la solicitud.",
+    "icono": "file-text",
+    "categoria": "Presentaciones",
+    "color": "#d93397",
+    "tiempoEstimado": "8 minutos",
+    "requiereAutenticacion": false,
+    "documentacionRequerida": ["Datos de contacto", "Detalle de la solicitud"]
+  },
+  {
+    "id": "obras-privadas",
+    "nombre": "Consultar por obra o construcción",
+    "descripcion": "Iniciá una consulta sobre permisos, documentación o seguimiento de una obra privada.",
+    "icono": "home",
+    "categoria": "Obras",
+    "color": "#123d67",
+    "tiempoEstimado": "12 minutos",
+    "requiereAutenticacion": true,
+    "documentacionRequerida": ["DNI", "Plano o documentación disponible", "Ubicación"]
+  },
+  {
+    "id": "rentas-consulta",
+    "nombre": "Consultar tasas o deuda municipal",
+    "descripcion": "Pedí ayuda sobre tasas, pagos, comprobantes o deuda municipal.",
+    "icono": "credit-card",
+    "categoria": "Rentas",
+    "color": "#2e75b8",
+    "tiempoEstimado": "6 minutos",
+    "requiereAutenticacion": false,
+    "documentacionRequerida": ["DNI o CUIT", "Número de cuenta si lo tenés"]
+  },
+  {
+    "id": "solicitud-turno",
+    "nombre": "Pedir un turno o atención",
+    "descripcion": "Solicitá atención municipal y explicá brevemente el motivo.",
+    "icono": "calendar",
+    "categoria": "Atención",
+    "color": "#84bd1a",
+    "tiempoEstimado": "4 minutos",
+    "requiereAutenticacion": false,
+    "documentacionRequerida": ["Datos de contacto"]
+  }
+]

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ingresar al panel - Municipalidad de Fray Mamerto Esquiú</title>
+    <meta name="description" content="Acceso al panel de administración del sitio municipal.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="admin-body login-body">
+    <main class="login-shell">
+      <section class="login-panel">
+        <a class="brand" href="index.html" aria-label="Inicio">
+          <img src="assets/optimized/fme-04.png" alt="Fray Municipalidad" width="1024" height="684" decoding="async">
+        </a>
+        <div>
+          <p class="kicker">Panel web</p>
+          <h1>Ingresar</h1>
+        </div>
+        <form class="admin-form" data-login-form>
+          <label>
+            Email
+            <input name="email" type="email" value="admin@fraymunicipalidad.gob.ar" autocomplete="username" required>
+          </label>
+          <label>
+            Contraseña
+            <input name="password" type="password" value="Cambiar123!" autocomplete="current-password" required>
+          </label>
+          <p class="login-error" data-login-error hidden></p>
+          <button class="button" type="submit">Ingresar</button>
+        </form>
+        <div class="login-help">
+          <strong>Usuarios de prueba</strong>
+          <span>admin, prensa, hacienda o gobierno @fraymunicipalidad.gob.ar</span>
+          <span>Contraseña inicial: Cambiar123!</span>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
