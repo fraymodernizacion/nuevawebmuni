@@ -4,7 +4,6 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/var/www/principal}"
 REMOTE="${REMOTE:-origin}"
 BRANCH="${BRANCH:-main}"
-NGINX_SERVICE="${NGINX_SERVICE:-nginx}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 TMP_BACKUP="$(mktemp -d)"
 
@@ -64,8 +63,6 @@ find "$APP_DIR" -type d -exec chmod 775 {} \;
 find "$APP_DIR" -type f -exec chmod 664 {} \;
 chmod +x scripts/deploy-vps.sh
 
-echo "==> Verificando Nginx"
-nginx -t
-systemctl reload "$NGINX_SERVICE"
-
 echo "==> Deploy completado ($TIMESTAMP)"
+echo "==> Paso manual pendiente:"
+echo "sudo nginx -t && sudo systemctl reload nginx"

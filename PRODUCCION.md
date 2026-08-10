@@ -106,7 +106,7 @@ Este script:
 - hace `git fetch` + `git pull --ff-only`
 - restaura los datos runtime
 - corrige permisos
-- valida y recarga Nginx
+- deja listo el paso manual final de Nginx
 
 Uso:
 
@@ -125,6 +125,13 @@ Nota: el script ya no hace `chown`. Se recomienda dejar una sola vez el repo con
 
 ```bash
 sudo chown -R fme:www-data /var/www/principal
+```
+
+Luego ejecutar manualmente:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
 ## Datos
