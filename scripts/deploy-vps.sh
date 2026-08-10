@@ -4,8 +4,6 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/var/www/principal}"
 REMOTE="${REMOTE:-origin}"
 BRANCH="${BRANCH:-main}"
-WEB_USER="${WEB_USER:-www-data}"
-WEB_GROUP="${WEB_GROUP:-www-data}"
 NGINX_SERVICE="${NGINX_SERVICE:-nginx}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 TMP_BACKUP="$(mktemp -d)"
@@ -62,9 +60,8 @@ restore_dir_if_exists "$TMP_BACKUP/data" "data"
 restore_dir_if_exists "$TMP_BACKUP/public-uploads" "public/uploads"
 
 echo "==> Ajustando permisos"
-chown -R "$WEB_USER:$WEB_GROUP" "$APP_DIR"
-find "$APP_DIR" -type d -exec chmod 755 {} \;
-find "$APP_DIR" -type f -exec chmod 644 {} \;
+find "$APP_DIR" -type d -exec chmod 775 {} \;
+find "$APP_DIR" -type f -exec chmod 664 {} \;
 chmod +x scripts/deploy-vps.sh
 
 echo "==> Verificando Nginx"

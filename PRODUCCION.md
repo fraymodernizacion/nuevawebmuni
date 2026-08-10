@@ -121,6 +121,12 @@ Opcionalmente:
 sudo APP_DIR=/var/www/principal BRANCH=main bash scripts/deploy-vps.sh
 ```
 
+Nota: el script ya no hace `chown`. Se recomienda dejar una sola vez el repo con:
+
+```bash
+sudo chown -R fme:www-data /var/www/principal
+```
+
 ## Datos
 
 El backend local guarda la información en:
