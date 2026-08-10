@@ -6,8 +6,8 @@ Este documento está pensado para que otro agente pueda entender rápido cómo e
 
 El proyecto tiene dos capas:
 
-1. **Sitio municipal estático/local en la raíz del workspace**
-   - Archivos principales: `index.html`, `styles.css`, `script.js`, `mesa-entrada.js`, páginas HTML sueltas y carpeta `assets/`.
+1. **Sitio municipal estático/local en `public/`**
+   - Archivos principales: `public/index.html`, `public/styles.css`, `public/script.js`, `public/mesa-entrada.js`, páginas HTML sueltas y carpeta `public/assets/`.
    - Servidor local propio: `server.js`.
    - CMS/admin local basado en `data/cms.json`.
 
@@ -18,16 +18,16 @@ El proyecto tiene dos capas:
 
 Regla práctica: cuando se cambia una página, estilo, script o asset del sitio municipal, normalmente hay que aplicar el mismo cambio en:
 
-- raíz del workspace, por ejemplo `index.html`, `styles.css`, `assets/...`
+- `public/`, por ejemplo `public/index.html`, `public/styles.css`, `public/assets/...`
 - copia publicable, por ejemplo `chatgpt-site/public/site/index.html`, `chatgpt-site/public/site/styles.css`, `chatgpt-site/public/site/assets/...`
 
 ## Rutas y páginas principales
 
 ### Home
 
-Archivo raíz:
+Archivo local:
 
-- `index.html`
+- `public/index.html`
 
 Copia publicable:
 
@@ -53,9 +53,9 @@ Nota reciente: se quitaron de la home los accesos rápidos `Trámites online`, `
 
 Archivos:
 
-- `mesa-entrada.html`
-- `mesa-entrada.js`
-- mocks en `mock/`
+- `public/mesa-entrada.html`
+- `public/mesa-entrada.js`
+- mocks en `public/mock/`
 
 Copia publicable:
 
@@ -79,9 +79,9 @@ Funcionalidad:
 
 Archivos:
 
-- `gabinete.html`
-- estilos relacionados en `styles.css`
-- fotos en `assets/optimized/gabinete/`
+- `public/gabinete.html`
+- estilos relacionados en `public/styles.css`
+- fotos en `public/assets/optimized/gabinete/`
 
 Copia publicable:
 
@@ -105,7 +105,7 @@ Notas recientes:
 
 Archivo:
 
-- `rentas.html`
+- `public/rentas.html`
 
 Incluye:
 
@@ -118,7 +118,7 @@ Incluye:
 
 Archivo:
 
-- `sepelio-san-jose.html`
+- `public/sepelio-san-jose.html`
 
 Incluye:
 
@@ -128,8 +128,8 @@ Incluye:
 
 Archivos públicos:
 
-- `boletin.html`
-- `contrataciones.html`
+- `public/boletin.html`
+- `public/contrataciones.html`
 
 Paneles admin relacionados:
 
@@ -143,6 +143,8 @@ Páginas de noticias estáticas actuales:
 - `noticia-agenda-actividades.html`
 - `noticia-canales-digitales.html`
 - `noticia-mejoras-puntos-historicos.html`
+
+en `public/`.
 
 Panel admin:
 
@@ -170,9 +172,9 @@ El menú móvil se abre/cierra desde `script.js` con:
 
 ## CSS y sistema visual
 
-Archivo raíz:
+Archivo local:
 
-- `styles.css`
+- `public/styles.css`
 
 Copia publicable:
 

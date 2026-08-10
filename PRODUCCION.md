@@ -1,5 +1,30 @@
 # Puesta en producción
 
+## Estructura recomendada
+
+El repositorio ahora está preparado para usar una carpeta pública:
+
+```text
+nuevawebmuni/
+├── public/
+│   ├── index.html
+│   ├── styles.css
+│   ├── script.js
+│   ├── mesa-entrada.js
+│   ├── assets/
+│   ├── mock/
+│   └── uploads/
+├── data/
+├── server.js
+└── package.json
+```
+
+Esto permite:
+
+- servir la web estática con Nginx desde `public/`
+- mantener `data/` fuera del docroot
+- dejar el proyecto alineado con una futura migración a Laravel
+
 ## Prueba local
 
 1. Instalar Node.js 18 o superior.
@@ -17,6 +42,8 @@ http://localhost:3000
 ```
 
 El panel administrativo se protege desde el servidor. Si se intenta entrar a una página `admin-*.html` sin sesión, redirige a `login.html`.
+
+El servidor local (`server.js`) sirve los archivos desde `public/`.
 
 ## Usuarios iniciales
 
@@ -52,9 +79,17 @@ Se necesita:
 - Dominio apuntando a la IP de la VM.
 - HTTPS con Nginx o Caddy como proxy reverso.
 - Variable `PORT` si no se usa el puerto 3000.
-- Backups de la carpeta `data/` y de los archivos subidos en `assets/`.
+- Backups de la carpeta `data/` y de los archivos subidos en `public/uploads/`.
 - Cambio obligatorio de contraseñas iniciales antes de publicar.
 - Firewall habilitando solo `80`, `443` y SSH.
+
+### Opción simple para VPS con Nginx
+
+- clonar el repo en `/var/www/principal`
+- usar `root /var/www/principal/public;`
+- dejar `data/` fuera del docroot, dentro del repo
+
+Durante la etapa estática, Nginx puede servir directamente `public/`. Si luego se migra a Laravel, se mantiene la misma idea de docroot en `public/`.
 
 ## Datos
 

@@ -5,9 +5,10 @@ const path = require("path");
 const { URL } = require("url");
 
 const ROOT = __dirname;
+const PUBLIC_ROOT = path.join(ROOT, "public");
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_FILE = path.join(DATA_DIR, "cms.json");
-const UPLOAD_DIR = path.join(ROOT, "uploads", "notes");
+const UPLOAD_DIR = path.join(PUBLIC_ROOT, "uploads", "notes");
 const PORT = Number(process.env.PORT || 3000);
 const SESSION_TTL_MS = 1000 * 60 * 60 * 8;
 const BUILDERBOT_ENDPOINT = process.env.BUILDERBOT_ENDPOINT || "";
@@ -245,8 +246,8 @@ function parseMultipartFile(buffer, boundary) {
 }
 
 function serveFile(res, pathname) {
-  const filePath = path.normalize(path.join(ROOT, pathname === "/" ? "index.html" : pathname));
-  if (!filePath.startsWith(ROOT)) {
+  const filePath = path.normalize(path.join(PUBLIC_ROOT, pathname === "/" ? "index.html" : pathname));
+  if (!filePath.startsWith(PUBLIC_ROOT)) {
     send(res, 403, "Acceso denegado");
     return;
   }
