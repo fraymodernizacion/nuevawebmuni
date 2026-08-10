@@ -91,6 +91,36 @@ Se necesita:
 
 Durante la etapa estática, Nginx puede servir directamente `public/`. Si luego se migra a Laravel, se mantiene la misma idea de docroot en `public/`.
 
+### Script de deploy recomendado
+
+El proyecto incluye:
+
+```text
+scripts/deploy-vps.sh
+```
+
+Este script:
+
+- entra al repo en `/var/www/principal`
+- preserva `data/` y `public/uploads/`
+- hace `git fetch` + `git pull --ff-only`
+- restaura los datos runtime
+- corrige permisos
+- valida y recarga Nginx
+
+Uso:
+
+```bash
+cd /var/www/principal
+sudo bash scripts/deploy-vps.sh
+```
+
+Opcionalmente:
+
+```bash
+sudo APP_DIR=/var/www/principal BRANCH=main bash scripts/deploy-vps.sh
+```
+
 ## Datos
 
 El backend local guarda la información en:
