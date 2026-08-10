@@ -378,11 +378,6 @@ svg {
   gap: 10px;
 }
 
-.botanical-secondary-actions {
-  display: grid;
-  gap: 10px;
-}
-
 .botanical-actions .outline-button {
   width: 100%;
 }
@@ -2832,8 +2827,7 @@ h2 {
   }
 
   .botanical-actions {
-    grid-template-columns: max-content max-content;
-    align-items: start;
+    grid-template-columns: max-content max-content max-content;
   }
 
   .botanical-section .button,
