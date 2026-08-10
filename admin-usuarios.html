@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin de Usuarios - Municipalidad de Fray Mamerto Esquiú</title>
+    <meta name="description" content="Prototipo de panel para administrar usuarios, roles y permisos por sección.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="admin-body">
+    <header class="admin-header">
+      <a class="brand" href="index.html" aria-label="Inicio">
+        <img src="assets/optimized/fme-04.png" alt="Fray Municipalidad" width="1024" height="684" decoding="async">
+      </a>
+      <nav class="admin-header-actions" aria-label="Accesos administrativos">
+        <a class="outline-light" href="admin-noticias.html">Noticias</a>
+        <a class="outline-light" href="admin-boletines.html">Boletines</a>
+        <a class="outline-light" href="admin-organigrama.html">Organigrama</a>
+        <a class="outline-light" href="admin-contrataciones.html">Contrataciones</a>
+        <a class="outline-light" href="index.html">Ver sitio público</a>
+      </nav>
+    </header>
+
+    <main class="admin-shell users-admin-shell">
+      <section class="admin-sidebar" aria-label="Usuarios administradores">
+        <div>
+          <p class="kicker">Administración</p>
+          <h1>Usuarios</h1>
+        </div>
+        <button class="button" type="button">Nuevo usuario</button>
+        <div class="admin-news-list">
+          <article class="admin-news-item active">
+            <span class="status open">Activo</span>
+            <h2>Super admin</h2>
+            <p>admin@fraymunicipalidad.gob.ar · Acceso total</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status open">Activo</span>
+            <h2>Área de Prensa</h2>
+            <p>prensa@fraymunicipalidad.gob.ar · Rol Prensa</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status open">Activo</span>
+            <h2>Secretaría de Hacienda</h2>
+            <p>hacienda@fraymunicipalidad.gob.ar · Rol Hacienda</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status open">Activo</span>
+            <h2>Secretaría de Gobierno</h2>
+            <p>gobierno@fraymunicipalidad.gob.ar · Rol Gobierno</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-editor" aria-label="Editor de usuario administrador">
+        <div class="admin-toolbar">
+          <div>
+            <p class="kicker">Editor</p>
+            <h2>Editar usuario</h2>
+          </div>
+          <div class="admin-actions">
+            <button class="outline-light" type="button">Guardar cambios</button>
+            <button class="button" type="button">Activar usuario</button>
+          </div>
+        </div>
+
+        <form class="admin-form">
+          <div class="admin-form-grid">
+            <label>
+              Nombre visible
+              <input type="text" value="Área de Prensa">
+            </label>
+            <label>
+              Email
+              <input type="email" value="prensa@fraymunicipalidad.gob.ar">
+            </label>
+          </div>
+          <div class="admin-form-grid">
+            <label>
+              Rol
+              <select>
+                <option>Super admin</option>
+                <option>Prensa</option>
+                <option>Hacienda</option>
+                <option>Gobierno</option>
+              </select>
+            </label>
+            <label>
+              Estado
+              <select>
+                <option>Activo</option>
+                <option>Suspendido</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-field">
+            <span>Permisos por sección</span>
+            <div class="permission-grid">
+              <label class="permission-card enabled">
+                <input type="checkbox" checked>
+                <strong>Noticias</strong>
+                <span>Cargar y editar publicaciones del sitio.</span>
+              </label>
+              <label class="permission-card enabled">
+                <input type="checkbox" checked>
+                <strong>Organigrama</strong>
+                <span>Editar áreas, cargos y autoridades.</span>
+              </label>
+              <label class="permission-card enabled">
+                <input type="checkbox" checked>
+                <strong>Contrataciones</strong>
+                <span>Cargar procesos y documentación pública.</span>
+              </label>
+              <label class="permission-card enabled">
+                <input type="checkbox" checked>
+                <strong>Boletines</strong>
+                <span>Cargar boletines municipales y archivos PDF.</span>
+              </label>
+              <label class="permission-card enabled">
+                <input type="checkbox" checked>
+                <strong>Usuarios y roles</strong>
+                <span>Crear usuarios y modificar permisos.</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <span>Roles predefinidos</span>
+            <div class="role-preset-grid">
+              <article>
+                <strong>Prensa</strong>
+                <p>Noticias y organigrama.</p>
+              </article>
+              <article>
+                <strong>Hacienda</strong>
+                <p>Contrataciones públicas.</p>
+              </article>
+              <article>
+                <strong>Gobierno</strong>
+                <p>Boletines municipales.</p>
+              </article>
+              <article>
+                <strong>Super admin</strong>
+                <p>Acceso completo a todas las secciones.</p>
+              </article>
+            </div>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

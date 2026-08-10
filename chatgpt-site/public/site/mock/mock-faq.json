@@ -1,0 +1,22 @@
+[
+  {
+    "categoria": "Inicio",
+    "pregunta": "¿Tengo que saber a qué Secretaría corresponde mi trámite?",
+    "respuesta": "No. Escribí qué necesitás con tus palabras y el municipio lo derivará internamente."
+  },
+  {
+    "categoria": "Seguimiento",
+    "pregunta": "¿Cómo consulto el estado de una solicitud?",
+    "respuesta": "Podés buscar por número de seguimiento, DNI, email o teléfono desde la sección Consultar un trámite."
+  },
+  {
+    "categoria": "Documentación",
+    "pregunta": "¿Puedo enviar documentación después?",
+    "respuesta": "Sí. Ingresá el número de trámite y adjuntá los archivos que te pidieron."
+  },
+  {
+    "categoria": "Comprobante",
+    "pregunta": "¿Recibo un comprobante?",
+    "respuesta": "Sí. Al finalizar se genera un número de seguimiento y un comprobante descargable de muestra."
+  }
+]

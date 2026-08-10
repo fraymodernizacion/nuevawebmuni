@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin de Contrataciones - Municipalidad de Fray Mamerto Esquiú</title>
+    <meta name="description" content="Prototipo de panel para cargar, editar y publicar contrataciones públicas municipales.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="admin-body">
+    <header class="admin-header">
+      <a class="brand" href="index.html" aria-label="Inicio">
+        <img src="assets/optimized/fme-04.png" alt="Fray Municipalidad" width="1024" height="684" decoding="async">
+      </a>
+      <nav class="admin-header-actions" aria-label="Accesos administrativos">
+        <a class="outline-light" href="admin-noticias.html">Noticias</a>
+        <a class="outline-light" href="admin-boletines.html">Boletines</a>
+        <a class="outline-light" href="admin-organigrama.html">Organigrama</a>
+        <a class="outline-light" href="admin-usuarios.html">Usuarios</a>
+        <a class="outline-light" href="contrataciones.html">Ver contrataciones</a>
+      </nav>
+    </header>
+
+    <main class="admin-shell">
+      <section class="admin-sidebar" aria-label="Contrataciones cargadas">
+        <div>
+          <p class="kicker">Transparencia municipal</p>
+          <h1>Contrataciones</h1>
+        </div>
+        <button class="button" type="button">Nueva contratación</button>
+        <div class="admin-news-list">
+          <article class="admin-news-item active">
+            <span class="status open">Recepción de ofertas</span>
+            <h2>Contratación directa N° 02/2025</h2>
+            <p>23/04/2025 · Obras y Servicios Públicos</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status evaluating">En evaluación</span>
+            <h2>Concurso de precios N° 01/2025</h2>
+            <p>14/03/2025 · Servicios Públicos</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status closed">Finalizada</span>
+            <h2>Contratación directa N° 01/2025</h2>
+            <p>20/01/2025 · Hacienda y Parque Automotor</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-editor" aria-label="Editor de contratación pública">
+        <div class="admin-toolbar">
+          <div>
+            <p class="kicker">Editor</p>
+            <h2>Cargar contratación</h2>
+          </div>
+          <div class="admin-actions">
+            <button class="outline-light" type="button">Guardar borrador</button>
+            <button class="button" type="button">Publicar</button>
+          </div>
+        </div>
+
+        <form class="admin-form">
+          <div class="admin-form-grid">
+            <label>
+              Año
+              <select>
+                <option>2026</option>
+                <option>2025</option>
+                <option>2024</option>
+                <option>2023</option>
+              </select>
+            </label>
+            <label>
+              Estado
+              <select>
+                <option>Recepción de ofertas</option>
+                <option>En evaluación</option>
+                <option>Finalizada</option>
+                <option>Borrador</option>
+              </select>
+            </label>
+          </div>
+          <div class="admin-form-grid">
+            <label>
+              Tipo de proceso
+              <select>
+                <option>Contratación directa</option>
+                <option>Concurso de precios</option>
+                <option>Licitación pública</option>
+                <option>Licitación privada</option>
+              </select>
+            </label>
+            <label>
+              Número
+              <input type="text" value="02/2025">
+            </label>
+          </div>
+          <label>
+            Objeto de la contratación
+            <textarea rows="3">Adquisición de combustible destinado a trabajos públicos de la Secretaría de Obras y Servicios Públicos</textarea>
+          </label>
+          <div class="admin-form-grid">
+            <label>
+              Presupuesto oficial
+              <input type="text" value="$110.055.480,00">
+            </label>
+            <label>
+              Fecha de publicación
+              <input type="date" value="2025-04-23">
+            </label>
+          </div>
+          <label>
+            Expediente
+            <input type="text" value="EX-2025-00009778-MUNIFMESQ-JA#DPP">
+          </label>
+          <label>
+            Autorizado por
+            <input type="text" value="Departamento Ejecutivo Municipal">
+          </label>
+          <label>
+            Unidad solicitante
+            <input type="text" value="Secretaría de Obras y Servicios Públicos">
+          </label>
+          <div class="admin-form-grid">
+            <label>
+              Presentación de ofertas
+              <textarea rows="3">Hasta el 25 de abril de 2025, en Contaduría o por correo oficial.</textarea>
+            </label>
+            <label>
+              Apertura
+              <textarea rows="3">25 de abril de 2025, 10:00 hs</textarea>
+            </label>
+          </div>
+          <label>
+            Resultado
+            <textarea rows="3" placeholder="Completar cuando el proceso finalice"></textarea>
+          </label>
+
+          <div class="form-field">
+            <span>Documentación</span>
+            <div class="contract-doc-list">
+              <article>
+                <strong>Pliego de bases y condiciones</strong>
+                <span>assets/contrataciones/pliego-02-2025.pdf</span>
+                <small>Se vincula al botón Descargar pliego.</small>
+                <button class="outline-light" type="button">Quitar</button>
+              </article>
+              <article>
+                <strong>Informe técnico</strong>
+                <span>assets/contrataciones/informe-tecnico-02-2025.pdf</span>
+                <small>Opcional para obras públicas. Se vincula al botón Ver detalle.</small>
+                <button class="outline-light" type="button">Quitar</button>
+              </article>
+              <article>
+                <strong>Acto administrativo</strong>
+                <span>assets/contrataciones/acto-02-2025.pdf</span>
+                <small>Documento complementario del proceso.</small>
+                <button class="outline-light" type="button">Quitar</button>
+              </article>
+            </div>
+            <div class="contract-doc-form">
+              <label>
+                Tipo de documento
+                <select>
+                  <option>Pliego de bases y condiciones</option>
+                  <option>Informe técnico</option>
+                  <option>Acto administrativo</option>
+                  <option>Documento complementario</option>
+                </select>
+              </label>
+              <label>
+                Archivo PDF
+                <input type="file" accept="application/pdf">
+              </label>
+              <button class="button" type="button">Agregar documento</button>
+            </div>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

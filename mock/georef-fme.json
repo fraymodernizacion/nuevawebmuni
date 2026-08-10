@@ -1,0 +1,291 @@
+{
+  "fuente": "Georef Argentina - Servicio de Normalización de Datos Geográficos",
+  "fuenteUrl": "https://apis.datos.gob.ar/georef/",
+  "fechaConsulta": "2026-07-31",
+  "provincia": {
+    "centroide": {
+      "lat": -27.3359537960762,
+      "lon": -66.9478972451295
+    },
+    "id": "10",
+    "nombre": "Catamarca"
+  },
+  "departamento": {
+    "centroide": {
+      "lat": -28.3343382720204,
+      "lon": -65.731187897962
+    },
+    "id": "10063",
+    "nombre": "Fray Mamerto Esquiú",
+    "provincia": {
+      "id": "10",
+      "interseccion": 0.00184457359783941,
+      "nombre": "Catamarca"
+    }
+  },
+  "municipio": {
+    "centroide": {
+      "lat": -28.3343343529283,
+      "lon": -65.7311908465217
+    },
+    "id": "100161",
+    "nombre": "Fray Mamerto Esquiú",
+    "provincia": {
+      "id": "10",
+      "interseccion": 0,
+      "nombre": "Catamarca"
+    }
+  },
+  "localidades": [
+    {
+      "categoria": "Entidad",
+      "centroide": {
+        "lat": -28.4220705786785,
+        "lon": -65.7117637445973
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "1006304001",
+      "localidad_censal": {
+        "id": "10063040",
+        "nombre": "San José"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "El Hueco",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    },
+    {
+      "categoria": "Entidad",
+      "centroide": {
+        "lat": -28.3568429260322,
+        "lon": -65.7073114373778
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "1006304002",
+      "localidad_censal": {
+        "id": "10063040",
+        "nombre": "San José"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "La Carrera",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    },
+    {
+      "categoria": "Entidad",
+      "centroide": {
+        "lat": -28.4249926112323,
+        "lon": -65.6967351961
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "1006304003",
+      "localidad_censal": {
+        "id": "10063040",
+        "nombre": "San José"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "La Falda de San Antonio",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    },
+    {
+      "categoria": "Entidad",
+      "centroide": {
+        "lat": -28.3721877692373,
+        "lon": -65.7048797047004
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "1006304004",
+      "localidad_censal": {
+        "id": "10063040",
+        "nombre": "San José"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "La Tercena",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    },
+    {
+      "categoria": "Localidad simple",
+      "centroide": {
+        "lat": -28.3025626549866,
+        "lon": -65.7195725583916
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "10063020",
+      "localidad_censal": {
+        "id": "10063020",
+        "nombre": "Pomancillo Este"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "Pomancillo Este",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    },
+    {
+      "categoria": "Localidad simple",
+      "centroide": {
+        "lat": -28.3044550285186,
+        "lon": -65.7317993779557
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "10063030",
+      "localidad_censal": {
+        "id": "10063030",
+        "nombre": "Pomancillo Oeste"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "Pomancillo Oeste",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    },
+    {
+      "categoria": "Entidad",
+      "centroide": {
+        "lat": -28.4257566977239,
+        "lon": -65.7083811850021
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "1006304005",
+      "localidad_censal": {
+        "id": "10063040",
+        "nombre": "San José"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "San Antonio",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    },
+    {
+      "categoria": "Componente de localidad compuesta",
+      "centroide": {
+        "lat": -28.3875664004555,
+        "lon": -65.700924753072
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "10063040",
+      "localidad_censal": {
+        "id": "10063040",
+        "nombre": "San José"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "San José",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    },
+    {
+      "categoria": "Entidad",
+      "centroide": {
+        "lat": -28.3904063679704,
+        "lon": -65.701711610127
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "1006304006",
+      "localidad_censal": {
+        "id": "10063040",
+        "nombre": "San José"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "San José",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    },
+    {
+      "categoria": "Localidad simple",
+      "centroide": {
+        "lat": -28.279903384504,
+        "lon": -65.732110637747
+      },
+      "departamento": {
+        "id": "10063",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "id": "10063050",
+      "localidad_censal": {
+        "id": "10063050",
+        "nombre": "Villa Las Pirquitas"
+      },
+      "municipio": {
+        "id": "100161",
+        "nombre": "Fray Mamerto Esquiú"
+      },
+      "nombre": "Villa Las Pirquitas",
+      "provincia": {
+        "id": "10",
+        "nombre": "Catamarca"
+      }
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin de Boletines - Municipalidad de Fray Mamerto Esquiú</title>
+    <meta name="description" content="Prototipo de panel para cargar, editar y publicar boletines municipales.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="admin-body" data-admin-mode="bulletin">
+    <header class="admin-header">
+      <a class="brand" href="index.html" aria-label="Inicio">
+        <img src="assets/optimized/fme-04.png" alt="Fray Municipalidad" width="1024" height="684" decoding="async">
+      </a>
+      <nav class="admin-header-actions" aria-label="Accesos administrativos">
+        <a class="outline-light" href="admin-noticias.html">Noticias</a>
+        <a class="outline-light" href="admin-organigrama.html">Organigrama</a>
+        <a class="outline-light" href="admin-contrataciones.html">Contrataciones</a>
+        <a class="outline-light" href="admin-usuarios.html">Usuarios</a>
+        <a class="outline-light" href="boletin.html">Ver boletines</a>
+      </nav>
+    </header>
+
+    <main class="admin-shell">
+      <section class="admin-sidebar" aria-label="Boletines cargados">
+        <div>
+          <p class="kicker">Información oficial</p>
+          <h1>Boletines</h1>
+        </div>
+        <button class="button" type="button">Nuevo boletín</button>
+        <div class="admin-news-list">
+          <article class="admin-news-item active">
+            <span class="status open">Publicado</span>
+            <h2>N° 03-2026</h2>
+            <p>09/03/2026 · Boletín Municipal</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status evaluating">Borrador</span>
+            <h2>N° 04-2026</h2>
+            <p>Sin publicar · PDF pendiente</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status closed">Archivado</span>
+            <h2>N° 12-2025</h2>
+            <p>15/12/2025 · Boletín Municipal</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-editor" aria-label="Editor de boletín">
+        <div class="admin-toolbar">
+          <div>
+            <p class="kicker">Editor</p>
+            <h2>Cargar boletín</h2>
+          </div>
+          <div class="admin-actions">
+            <button class="outline-light" type="button">Guardar borrador</button>
+            <button class="button" type="button">Publicar</button>
+          </div>
+        </div>
+
+        <form class="admin-form">
+          <div class="admin-form-grid">
+            <label>
+              Año
+              <select data-preview-source="year">
+                <option>2026</option>
+                <option>2025</option>
+                <option>2024</option>
+                <option>2023</option>
+              </select>
+            </label>
+            <label>
+              Número
+              <input data-preview-source="number" type="text" value="04">
+            </label>
+          </div>
+          <div class="admin-form-grid">
+            <label>
+              Fecha de publicación
+              <input data-preview-source="date" type="date" value="2026-04-13">
+            </label>
+            <label>
+              Estado
+              <select data-preview-source="status">
+                <option>Borrador</option>
+                <option>Publicado</option>
+                <option>Archivado</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Título interno
+            <input data-preview-source="title" type="text" value="Boletín Municipal N° 04-2026">
+          </label>
+          <label>
+            Archivo PDF publicado
+            <input data-preview-source="file" type="text" value="assets/boletines/boletin-04-2026.pdf">
+          </label>
+          <label>
+            Seleccionar PDF
+            <input data-bulletin-file type="file" accept="application/pdf">
+          </label>
+        </form>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin de Noticias - Municipalidad de Fray Mamerto Esquiú</title>
+    <meta name="description" content="Prototipo de panel para cargar, editar y publicar noticias municipales.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="admin-body">
+    <header class="admin-header">
+      <a class="brand" href="index.html" aria-label="Inicio">
+        <img src="assets/optimized/fme-04.png" alt="Fray Municipalidad" width="1024" height="684" decoding="async">
+      </a>
+      <nav class="admin-header-actions" aria-label="Accesos administrativos">
+        <a class="outline-light" href="admin-boletines.html">Boletines</a>
+        <a class="outline-light" href="admin-organigrama.html">Organigrama</a>
+        <a class="outline-light" href="admin-contrataciones.html">Contrataciones</a>
+        <a class="outline-light" href="admin-usuarios.html">Usuarios</a>
+        <a class="outline-light" href="index.html#noticias">Ver sitio público</a>
+      </nav>
+    </header>
+
+    <main class="admin-shell">
+      <section class="admin-sidebar" aria-label="Noticias cargadas">
+        <div>
+          <p class="kicker">Comunicación</p>
+          <h1>Noticias</h1>
+        </div>
+        <button class="button" type="button">Nueva noticia</button>
+        <div class="admin-news-list">
+          <article class="admin-news-item active">
+            <span class="status open">Publicada</span>
+            <h2>Mejoras para disfrutar los puntos históricos</h2>
+            <p>26/05/2026 · Obras y espacios públicos</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status evaluating">Borrador</span>
+            <h2>Nuevos canales digitales</h2>
+            <p>24/05/2026 · Gobierno</p>
+          </article>
+          <article class="admin-news-item">
+            <span class="status closed">Archivada</span>
+            <h2>Agenda de actividades culturales</h2>
+            <p>21/05/2026 · Comunidad</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-editor" aria-label="Editor de noticia">
+        <div class="admin-toolbar">
+          <div>
+            <p class="kicker">Editor</p>
+            <h2>Editar noticia</h2>
+          </div>
+          <div class="admin-actions">
+            <button class="outline-light" type="button">Guardar borrador</button>
+            <button class="button" type="button">Publicar</button>
+          </div>
+        </div>
+
+        <form class="admin-form">
+          <label>
+            Título
+            <input data-preview-source="title" type="text" value="Mejoras para disfrutar los puntos históricos del departamento">
+          </label>
+          <label>
+            Bajada
+            <textarea data-preview-source="summary" rows="3">La Municipalidad avanza con tareas de mantenimiento, señalización y mejoras urbanas en puntos históricos del departamento.</textarea>
+          </label>
+          <div class="admin-form-grid">
+            <label>
+              Categoría
+              <select data-preview-source="category">
+                <option>Obras y espacios públicos</option>
+                <option>Gobierno</option>
+                <option>Comunidad</option>
+                <option>Cultura</option>
+              </select>
+            </label>
+            <label>
+              Fecha de publicación
+              <input data-preview-source="date" type="date" value="2026-05-26">
+            </label>
+          </div>
+          <label>
+            Imagen principal
+            <input data-preview-source="image" type="text" value="assets/optimized/fme-01.jpg">
+          </label>
+          <div class="form-field">
+            <span>Cuerpo de la noticia</span>
+            <div class="rich-editor">
+              <div class="editor-toolbar" aria-label="Formato del cuerpo">
+                <button type="button" data-format="formatBlock" data-value="P">Párrafo</button>
+                <button type="button" data-format="formatBlock" data-value="H2">Título</button>
+                <button type="button" data-format="formatBlock" data-value="H3">Subtítulo</button>
+                <button type="button" data-format="bold">B</button>
+                <button type="button" data-format="italic">I</button>
+                <button type="button" data-format="formatBlock" data-value="BLOCKQUOTE">Cita</button>
+                <button type="button" data-format="insertUnorderedList">Lista</button>
+              </div>
+              <p class="editor-hint">Clic derecho dentro del cuerpo para insertar imagen, carrusel o video en la posición del cursor.</p>
+              <div class="editor-surface" data-preview-source="body" contenteditable="true" role="textbox" aria-multiline="true">
+                <p>Las intervenciones incluyen limpieza integral, reacondicionamiento de sectores peatonales, revisión de luminarias y renovación de cartelería informativa.</p>
+                <h2>Próximas tareas</h2>
+                <figure class="body-image">
+                  <img src="assets/optimized/fme-06.jpg" alt="Imagen de la noticia" width="1000" height="276" loading="lazy" decoding="async">
+                  <figcaption>Imagen complementaria dentro del cuerpo de la noticia.</figcaption>
+                </figure>
+                <p>Desde el área de Obras y Servicios Públicos se trabaja de manera coordinada con equipos municipales para sostener el cuidado de los espacios patrimoniales durante todo el año.</p>
+                <div class="news-carousel" aria-label="Galería de imágenes">
+                  <figure>
+                    <img src="assets/optimized/fme-05.jpg" alt="Imagen 1 de la galería" width="1200" height="249" loading="lazy" decoding="async">
+                    <figcaption>Imagen 1 de la galería</figcaption>
+                  </figure>
+                  <figure>
+                    <img src="assets/optimized/fme-09.jpg" alt="Imagen 2 de la galería" width="703" height="900" loading="lazy" decoding="async">
+                    <figcaption>Imagen 2 de la galería</figcaption>
+                  </figure>
+                </div>
+                <blockquote>El objetivo es facilitar recorridos más seguros, accesibles y ordenados para vecinos, instituciones educativas y visitantes.</blockquote>
+              </div>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <aside class="admin-preview" aria-label="Vista previa">
+        <div>
+          <p class="kicker">Vista publicada</p>
+          <h2>Así se verá la noticia</h2>
+        </div>
+        <iframe class="preview-frame" title="Vista previa de noticia publicada"></iframe>
+        <div class="publish-checklist">
+          <strong>Checklist antes de publicar</strong>
+          <label><input type="checkbox" checked> Título y categoría revisados</label>
+          <label><input type="checkbox" checked> Imagen con descripción</label>
+          <label><input type="checkbox"> Enlaces y teléfonos verificados</label>
+        </div>
+      </aside>
+    </main>
+
+    <div class="editor-context-menu" data-editor-context-menu hidden>
+      <div class="context-menu-group">
+        <span>Formato</span>
+        <button type="button" data-context-format="formatBlock" data-value="P">Párrafo</button>
+        <button type="button" data-context-format="formatBlock" data-value="H2">Título</button>
+        <button type="button" data-context-format="formatBlock" data-value="H3">Subtítulo</button>
+        <button type="button" data-context-format="bold">Negrita</button>
+        <button type="button" data-context-format="italic">Itálica</button>
+        <button type="button" data-context-format="formatBlock" data-value="BLOCKQUOTE">Cita</button>
+        <button type="button" data-context-format="insertUnorderedList">Lista</button>
+      </div>
+      <div class="context-menu-group">
+        <span>Medios</span>
+        <button type="button" data-context-media="image">Insertar imagen</button>
+        <button type="button" data-context-media="carousel">Insertar carrusel de fotos</button>
+        <button type="button" data-context-media="video">Insertar video</button>
+      </div>
+      <div class="context-menu-group">
+        <span>Acciones</span>
+        <button type="button" data-context-delete-media disabled>Eliminar imagen/video</button>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

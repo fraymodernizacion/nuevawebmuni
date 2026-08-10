@@ -1,0 +1,36 @@
+{
+  "metricas": {
+    "total": 128,
+    "nuevos": 18,
+    "enGestion": 74,
+    "vencidos": 6
+  },
+  "semanal": [14, 22, 18, 30, 24, 11, 9],
+  "tramites": [
+    {
+      "numero": "FME-2026-000001",
+      "vecino": "María V.",
+      "tema": "Presentar una nota al municipio",
+      "estado": "En revisión",
+      "prioridad": "Normal"
+    },
+    {
+      "numero": "FME-2026-000014",
+      "vecino": "Carlos R.",
+      "tema": "Problema en la vía pública",
+      "estado": "Pendiente de documentación",
+      "prioridad": "Alta"
+    },
+    {
+      "numero": "FME-2026-000021",
+      "vecino": "Ana L.",
+      "tema": "Consultar tasas o deuda municipal",
+      "estado": "Resuelto",
+      "prioridad": "Normal"
+    }
+  ],
+  "operadorActivo": {
+    "nombre": "María Gómez",
+    "area": "Centro de Atención Ciudadana"
+  }
+}

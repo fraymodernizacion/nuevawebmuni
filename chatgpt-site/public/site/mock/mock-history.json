@@ -1,0 +1,30 @@
+[
+  {
+    "estado": "Recibido",
+    "icono": "inbox",
+    "fecha": "30/07/2026 09:12",
+    "color": "#2e75b8",
+    "comentarios": "Tu solicitud ingresó correctamente."
+  },
+  {
+    "estado": "En revisión",
+    "icono": "search",
+    "fecha": "30/07/2026 10:05",
+    "color": "#84bd1a",
+    "comentarios": "Estamos revisando la información enviada."
+  },
+  {
+    "estado": "Derivado",
+    "icono": "arrow-right",
+    "fecha": "30/07/2026 11:20",
+    "color": "#d93397",
+    "comentarios": "La solicitud fue enviada al equipo correspondiente."
+  },
+  {
+    "estado": "En gestión",
+    "icono": "clock",
+    "fecha": "30/07/2026 12:10",
+    "color": "#123d67",
+    "comentarios": "El equipo está trabajando en tu pedido."
+  }
+]

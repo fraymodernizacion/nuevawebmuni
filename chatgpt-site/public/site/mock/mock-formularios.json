@@ -1,0 +1,518 @@
+{
+  "presentacion-general": {
+    "titulo": "Presentación general",
+    "pasos": [
+      {
+        "titulo": "Contanos qué necesitás",
+        "campos": [
+          {
+            "tipo": "textarea",
+            "id": "detalle",
+            "label": "Escribí tu solicitud con tus palabras",
+            "placeholder": "Por ejemplo: quiero presentar una nota o hacer un reclamo..."
+          }
+        ]
+      },
+      {
+        "titulo": "Ubicación o referencia",
+        "campos": [
+          {
+            "tipo": "gps",
+            "id": "ubicacion",
+            "label": "Ubicación aproximada"
+          },
+          {
+            "tipo": "mapa",
+            "id": "mapa",
+            "label": "Marcá el lugar si corresponde"
+          }
+        ]
+      },
+      {
+        "titulo": "Documentación",
+        "campos": [
+          {
+            "tipo": "adjuntos",
+            "id": "archivos",
+            "label": "Adjuntá archivos, fotos o comprobantes"
+          }
+        ]
+      },
+      {
+        "titulo": "Revisar y enviar",
+        "campos": [
+          {
+            "tipo": "check",
+            "id": "declaracion",
+            "label": "Confirmo que la información enviada es correcta"
+          }
+        ]
+      }
+    ]
+  },
+  "nota-municipio": {
+    "titulo": "Presentar una nota al municipio",
+    "pasos": [
+      {
+        "titulo": "Contanos qué necesitás",
+        "campos": [
+          {
+            "tipo": "textarea",
+            "id": "detalle",
+            "label": "Escribí tu solicitud",
+            "placeholder": "Por ejemplo: necesito pedir autorización para..."
+          }
+        ]
+      },
+      {
+        "titulo": "Tus datos de contacto",
+        "campos": [
+          {
+            "tipo": "texto",
+            "id": "nombre",
+            "label": "Nombre y apellido"
+          },
+          {
+            "tipo": "email",
+            "id": "email",
+            "label": "Email"
+          },
+          {
+            "tipo": "telefono",
+            "id": "telefono",
+            "label": "Teléfono"
+          }
+        ]
+      },
+      {
+        "titulo": "Ubicación o referencia",
+        "campos": [
+          {
+            "tipo": "gps",
+            "id": "ubicacion",
+            "label": "Ubicación aproximada"
+          },
+          {
+            "tipo": "mapa",
+            "id": "mapa",
+            "label": "Marcá el lugar si corresponde"
+          }
+        ]
+      },
+      {
+        "titulo": "Documentación",
+        "campos": [
+          {
+            "tipo": "adjuntos",
+            "id": "archivos",
+            "label": "Adjuntá archivos, fotos o comprobantes"
+          },
+          {
+            "tipo": "check",
+            "id": "declaracion",
+            "label": "Confirmo que la información enviada es correcta"
+          }
+        ]
+      }
+    ]
+  },
+  "habilitacion-comercial": {
+    "titulo": "Alta de contribuyente comercial",
+    "pasos": [
+      {
+        "titulo": "Datos del contribuyente",
+        "campos": [
+          {
+            "tipo": "select",
+            "id": "tipo-contribuyente",
+            "label": "Persona física o jurídica",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "Persona física",
+              "Persona jurídica"
+            ]
+          },
+          {
+            "tipo": "select",
+            "id": "tipo-societario",
+            "label": "Tipo societario (si corresponde)",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "No corresponde",
+              "Sociedad anónima (S.A.)",
+              "Sociedad de responsabilidad limitada (S.R.L.)",
+              "Sociedad por acciones simplificada (S.A.S.)",
+              "Sociedad de hecho",
+              "Cooperativa",
+              "Asociación civil",
+              "Fundación",
+              "Otro"
+            ]
+          },
+          {
+            "tipo": "select",
+            "id": "tipo-documento",
+            "label": "Documento",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "DNI",
+              "CUIT",
+              "CUIL",
+              "CDI",
+              "Pasaporte"
+            ]
+          },
+          {
+            "tipo": "texto",
+            "id": "cuit",
+            "label": "CUIT"
+          },
+          {
+            "tipo": "texto",
+            "id": "razon-social",
+            "label": "Nombre y apellido o denominación"
+          },
+          {
+            "tipo": "telefono",
+            "id": "telefono",
+            "label": "Número de celular"
+          },
+          {
+            "tipo": "email",
+            "id": "email",
+            "label": "Email"
+          }
+        ]
+      },
+      {
+        "titulo": "Domicilio real del contribuyente",
+        "campos": [
+          {
+            "tipo": "domicilio-fme",
+            "id": "domicilio-real",
+            "label": "Domicilio real"
+          }
+        ]
+      },
+      {
+        "titulo": "Condición fiscal y actividad",
+        "campos": [
+          {
+            "tipo": "select",
+            "id": "condicion-iva",
+            "label": "Condición frente al IVA",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "Responsable inscripto",
+              "Monotributista",
+              "Exento",
+              "No responsable",
+              "Consumidor final",
+              "No categorizado"
+            ]
+          },
+          {
+            "tipo": "select",
+            "id": "ingresos-brutos",
+            "label": "Situación en Ingresos Brutos",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "Inscripto local Catamarca",
+              "Convenio multilateral",
+              "Exento",
+              "No inscripto / en trámite"
+            ]
+          },
+          {
+            "tipo": "actividad-arca",
+            "id": "actividad-arca",
+            "label": "Código de actividad económica ARCA",
+            "placeholder": "Seleccioná el código que corresponda",
+            "fuente": "https://serviciosweb.afip.gob.ar/genericos/nomencladoractividades/index.aspx",
+            "fuenteDatos": "mock/actividades-arca.json",
+            "totalOpciones": 958,
+            "ayuda": "Listado completo importado desde ACTIVIDADES_ECONOMICAS_F883."
+          },
+          {
+            "tipo": "select",
+            "id": "actividad-principal",
+            "label": "La actividad seleccionada es",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "Principal",
+              "Secundaria"
+            ]
+          },
+          {
+            "tipo": "fecha",
+            "id": "fecha-alta-actividades",
+            "label": "Fecha de alta de actividades"
+          }
+        ]
+      },
+      {
+        "titulo": "Casa central o sucursal",
+        "campos": [
+          {
+            "tipo": "texto",
+            "id": "nombre-fantasia",
+            "label": "Nombre de fantasía"
+          },
+          {
+            "tipo": "fecha",
+            "id": "fecha-alta-sucursal",
+            "label": "Fecha de alta"
+          },
+          {
+            "tipo": "domicilio-fme",
+            "id": "domicilio-comercio",
+            "label": "Domicilio donde se desarrolla la actividad"
+          },
+          {
+            "tipo": "texto",
+            "id": "matricula-catastral",
+            "label": "Matrícula catastral",
+            "placeholder": "Formato: 09-_--_-0000 o 09-_--_-PA00"
+          },
+          {
+            "tipo": "select",
+            "id": "caracter-domicilio",
+            "label": "Caracter del domicilio",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "Propio",
+              "Alquilado",
+              "Cedido",
+              "Comodato",
+              "Otro"
+            ]
+          },
+          {
+            "tipo": "select",
+            "id": "tipo-local",
+            "label": "Tipo de espacio comercial",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "Local a la calle",
+              "Local dentro de vivienda",
+              "Oficina",
+              "Depósito",
+              "Puesto fijo",
+              "Puesto móvil",
+              "Venta online sin atención al público",
+              "Otro"
+            ]
+          },
+          {
+            "tipo": "select",
+            "id": "atencion-publico",
+            "label": "Atención al público en el domicilio",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "Sí",
+              "No",
+              "Solo retiro / entrega",
+              "A confirmar por inspección"
+            ]
+          }
+        ]
+      },
+      {
+        "titulo": "Ubicación del comercio",
+        "campos": [
+          {
+            "tipo": "select",
+            "id": "requiere-mapa",
+            "label": "¿Corresponde marcar ubicación en el mapa?",
+            "placeholder": "Seleccioná una opción",
+            "opciones": [
+              "Sí, el comercio funciona en un domicilio físico",
+              "No, actividad sin local físico",
+              "No sabe / solicita orientación"
+            ]
+          },
+          {
+            "tipo": "gps",
+            "id": "ubicacion-comercio",
+            "label": "Marcá la ubicación exacta del comercio"
+          }
+        ]
+      },
+      {
+        "titulo": "Documentación y declaración",
+        "campos": [
+          {
+            "tipo": "adjuntos",
+            "id": "dni",
+            "label": "Adjuntar DNI o documentación societaria"
+          },
+          {
+            "tipo": "adjuntos",
+            "id": "cuit",
+            "label": "Adjuntar constancia de CUIT / inscripción ARCA"
+          },
+          {
+            "tipo": "adjuntos",
+            "id": "cedula-fiscal",
+            "label": "Adjuntar cédula fiscal"
+          },
+          {
+            "tipo": "adjuntos",
+            "id": "acta-autoridades",
+            "label": "Adjuntar acta de designación de autoridades (persona jurídica)"
+          },
+          {
+            "tipo": "adjuntos",
+            "id": "domicilio",
+            "label": "Adjuntar respaldo del domicilio comercial"
+          },
+          {
+            "tipo": "adjuntos",
+            "id": "representante",
+            "label": "Adjuntar DNI del representante, si corresponde"
+          },
+          {
+            "tipo": "textarea",
+            "id": "observaciones",
+            "label": "Observaciones",
+            "placeholder": "Agregá aclaraciones para Mesa de Entrada o Rentas"
+          },
+          {
+            "tipo": "check",
+            "id": "declaracion",
+            "label": "Declaro que los datos ingresados son correctos y autorizo la verificación municipal correspondiente"
+          }
+        ]
+      }
+    ]
+  },
+  "asistencia-instituciones": {
+    "titulo": "Solicitar asistencia para una institución",
+    "pasos": [
+      {
+        "titulo": "Institución",
+        "campos": [
+          {
+            "tipo": "institucion",
+            "id": "institucion",
+            "label": "Buscar escuela u organismo",
+            "placeholder": "Escribí el nombre de la escuela u organismo"
+          }
+        ]
+      },
+      {
+        "titulo": "Solicitud",
+        "campos": [
+          {
+            "tipo": "textarea",
+            "id": "solicitud",
+            "label": "¿Qué necesita la institución?",
+            "placeholder": "Por ejemplo: transporte, desmalezado, sonido, autorización, personal de tránsito..."
+          }
+        ]
+      },
+      {
+        "titulo": "Documentación",
+        "campos": [
+          {
+            "tipo": "adjuntos",
+            "id": "nota",
+            "label": "Adjuntar nota, pedido formal o documentación respaldatoria"
+          },
+          {
+            "tipo": "check",
+            "id": "declaracion",
+            "label": "Confirmo que la información enviada es correcta"
+          }
+        ]
+      }
+    ]
+  },
+  "default": {
+    "titulo": "Iniciar solicitud",
+    "pasos": [
+      {
+        "titulo": "Qué necesitás",
+        "campos": [
+          {
+            "tipo": "textarea",
+            "id": "necesidad",
+            "label": "Explicá tu pedido"
+          },
+          {
+            "tipo": "select",
+            "id": "tema",
+            "label": "Tema aproximado",
+            "opciones": [
+              "Servicios",
+              "Rentas",
+              "Obras",
+              "Comercio",
+              "Otro"
+            ]
+          }
+        ]
+      },
+      {
+        "titulo": "Datos de contacto",
+        "campos": [
+          {
+            "tipo": "texto",
+            "id": "nombre",
+            "label": "Nombre y apellido"
+          },
+          {
+            "tipo": "email",
+            "id": "email",
+            "label": "Email"
+          },
+          {
+            "tipo": "telefono",
+            "id": "telefono",
+            "label": "Teléfono"
+          }
+        ]
+      },
+      {
+        "titulo": "Más información",
+        "campos": [
+          {
+            "tipo": "fecha",
+            "id": "fecha",
+            "label": "Fecha relacionada"
+          },
+          {
+            "tipo": "radio",
+            "id": "contacto",
+            "label": "Cómo preferís que te contactemos",
+            "opciones": [
+              "WhatsApp",
+              "Email",
+              "Teléfono"
+            ]
+          },
+          {
+            "tipo": "fotografia",
+            "id": "foto",
+            "label": "Agregar una fotografía"
+          }
+        ]
+      },
+      {
+        "titulo": "Revisar y enviar",
+        "campos": [
+          {
+            "tipo": "dragdrop",
+            "id": "documentos",
+            "label": "Arrastrá documentación adicional"
+          },
+          {
+            "tipo": "check",
+            "id": "acepto",
+            "label": "Acepto enviar esta solicitud al municipio"
+          }
+        ]
+      }
+    ]
+  }
+}
