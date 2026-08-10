@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Municipalidad de Fray Mamerto Esquiú</title>
-    <meta name="description" content="Prototipo mobile-first para la Municipalidad de Fray Mamerto Esquiú.">
+    <meta name="description" content="Sitio web de la Municipalidad de Fray Mamerto Esquiú.">
     <link rel="preload" as="image" href="assets/optimized/slider1.jpg">
     <link rel="stylesheet" href="styles.css">
   </head>
@@ -17,12 +17,8 @@
         <span></span><span></span><span></span>
       </button>
       <nav class="main-nav" aria-label="Menu principal">
-        <a href="mesa-entrada.html">Mesa de Entrada</a>
-        <a href="#tramites">Trámites</a>
-        <a href="#noticias">Noticias</a>
         <a href="#gobierno-abierto">Gobierno Abierto</a>
         <a href="#parque-botanico">Parque Botánico</a>
-        <a href="#agenda">Agenda</a>
         <a href="gabinete.html">Gobierno</a>
       </nav>
     </header>
@@ -33,7 +29,7 @@
         <div class="hero-content">
           <p class="kicker">Fray Mamerto Esquiú</p>
           <h1>Tu municipio, más cerca.</h1>
-          <p>Accedé a trámites, novedades y servicios locales desde un inicio simple, rápido y pensado para el celular.</p>
+          <p>Hacé trámites, consultá servicios y encontrá información municipal de forma simple y rápida.</p>
         </div>
       </section>
 
@@ -58,12 +54,12 @@
         </div>
       </section>
 
-      <section class="service-banner" aria-labelledby="sepelio-banner-title">
+      <section class="service-banner" aria-labelledby="sepelio-banner-title" hidden>
         <div>
           <h2 id="sepelio-banner-title">Servicio de Sepelio San José</h2>
           <p>Planes familiares, tarifas individuales, requisitos de inscripción y consulta telefónica.</p>
         </div>
-        <a class="button" href="sepelio-san-jose.html">Ver información</a>
+        <a class="button" href="sepelio-san-jose.html">Consultar requisitos</a>
       </section>
 
       <section class="botanical-section" id="parque-botanico" aria-labelledby="botanical-title">
@@ -85,14 +81,14 @@
             <article>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3V6Zm2 3v6h14V9H5Zm2 2h4v2H7v-2Zm8-1.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z"/></svg>
               <div>
-                <span>Entrada general</span>
-                <strong>$2000</strong>
-                <p>Para abonar, ingresá al portal y seleccioná la opción “Parque Botánico”.</p>
+                <span>Entrada general:</span>
+                <strong>$2.000</strong>
+                <p>Comprá tu entrada online.</p>
               </div>
             </article>
           </div>
           <div class="botanical-actions">
-            <a class="button" href="https://municipalidad.com/fray/pagoconceptos">Abonar entrada</a>
+            <a class="button" href="https://municipalidad.com/fray/pagoconceptos">Comprar entrada</a>
             <a class="outline-button" href="https://maps.app.goo.gl/H6HMCtC99nQJDf427">Ver ubicación</a>
             <a class="outline-button whatsapp-button" href="https://wa.me/5493834732176">WhatsApp</a>
           </div>
@@ -104,7 +100,7 @@
           <p class="kicker">Dirección de Rentas</p>
           <h2>Consulta y pago de deuda</h2>
         </div>
-        <p>Accedé al portal para consultar y pagar tasas, contribuciones y otros conceptos municipales.</p>
+        <p>Consultá tus deudas y realizá pagos municipales de forma online.</p>
         <div class="payment-grid">
           <a href="https://www.municipalidad.com/fray/deuda">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7v9h-6v-6h-4v6H4v-9Zm2 .9V18h2v-6h8v6h2v-6.1l-6-5.25-6 5.25Z"/></svg>
@@ -135,10 +131,10 @@
             <span>Obras Privadas</span>
           </a>
         </div>
-        <a class="button" href="https://www.municipalidad.com/fray/deuda">Ir al portal de consulta y pago</a>
+        <a class="button" href="https://www.municipalidad.com/fray/deuda">Consultar deuda y pagar</a>
       </section>
 
-      <section class="section" id="noticias">
+      <section class="section" id="noticias" hidden>
         <div class="section-heading">
           <p class="kicker">Actualidad</p>
           <h2>Noticias municipales</h2>
@@ -171,10 +167,10 @@
         </div>
       </section>
 
-      <section class="services" id="agenda">
+      <section class="services" id="agenda" hidden>
         <div class="section-heading">
           <p class="kicker">Servicios</p>
-          <h2>Lo más consultado</h2>
+          <h2>Trámites y servicios más consultados</h2>
         </div>
         <div class="service-grid">
           <a href="#">Habilitaciones comerciales</a>
@@ -193,16 +189,16 @@
         </div>
 
         <div class="open-government-grid">
-          <article class="open-government-card">
+          <article class="open-government-card" hidden>
             <div class="document-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6V2Zm8 2.8V8h3.2L14 4.8ZM8.5 11.5v2h7v-2h-7Zm0 4v2h9v-2h-9Z"/></svg>
             </div>
             <div>
               <span>Información oficial</span>
               <h3>Boletín Municipal</h3>
-              <p>Publicaciones oficiales organizadas por año y número.</p>
+              <p>Consultá decretos, resoluciones, ordenanzas y demás publicaciones oficiales.</p>
             </div>
-            <a class="button" href="boletin.html">Abrir boletines</a>
+            <a class="button" href="boletin.html">Consultar boletines</a>
           </article>
 
           <article class="open-government-card">
@@ -212,9 +208,9 @@
             <div>
               <span>Compras y procesos</span>
               <h3>Contrataciones Públicas</h3>
-              <p>Licitaciones, concursos y contrataciones del municipio.</p>
+              <p>Consultá licitaciones, concursos de precios y contrataciones públicas del Municipio.</p>
             </div>
-            <a class="button" href="contrataciones.html">Ver contrataciones</a>
+            <a class="button" href="contrataciones.html">Consultar contrataciones</a>
           </article>
 
           <article class="open-government-card">
@@ -224,9 +220,9 @@
             <div>
               <span>Marco institucional</span>
               <h3>Carta Orgánica Municipal</h3>
-              <p>Documento institucional de la Municipalidad de Fray Mamerto Esquiú.</p>
+              <p>Conocé la norma fundamental que establece la organización, competencias y funcionamiento del Municipio.</p>
             </div>
-            <a class="button" href="https://lideresmunicipales.cippec.org/web/archivos/uploads/2015/02/03-Fray-Mamerto-Esquiu-Catamarca-Carta-Organica.pdf">Ver carta orgánica</a>
+            <a class="button" href="https://lideresmunicipales.cippec.org/web/archivos/uploads/2015/02/03-Fray-Mamerto-Esquiu-Catamarca-Carta-Organica.pdf">Conocer carta orgánica</a>
           </article>
         </div>
 
@@ -234,7 +230,7 @@
           <div>
             <span>Datos abiertos</span>
             <h3>Infracciones de tránsito en Fray Mamerto Esquiú</h3>
-            <p>Panel interactivo con información de infracciones registradas en el municipio.</p>
+            <p>Consultá información y estadísticas sobre las infracciones de tránsito registradas en Fray Mamerto Esquiú.</p>
           </div>
           <div class="dashboard-frame">
             <iframe width="600" height="338" src="https://datastudio.google.com/embed/reporting/5035257c-ecbc-4f6c-8a74-d1b02c760c4a/page/kTItD" frameborder="0" style="border:0" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
@@ -247,7 +243,7 @@
         <div>
           <p class="kicker">Gobierno municipal</p>
           <h2>Gestión cercana, información clara.</h2>
-          <p>Un bloque institucional para presentar autoridades, áreas de gobierno y accesos de transparencia sin sacar protagonismo a los servicios que el vecino necesita primero.</p>
+          <p>Conocé las autoridades municipales, las áreas de gobierno y cómo se organiza la gestión de Fray Mamerto Esquiú.</p>
           <a class="button" href="gabinete.html">Conocer el gabinete</a>
         </div>
       </section>

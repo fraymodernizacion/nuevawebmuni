@@ -197,10 +197,7 @@ function renderPublishedPreview(values) {
         <span></span><span></span><span></span>
       </button>
       <nav class="main-nav" aria-label="Menu principal">
-        <a href="index.html#tramites">Trámites</a>
-        <a href="index.html#noticias">Noticias</a>
-        <a href="boletin.html">Boletín</a>
-        <a href="index.html#agenda">Agenda</a>
+        <a href="index.html#gobierno-abierto">Gobierno Abierto</a>
         <a href="gabinete.html">Gobierno</a>
       </nav>
     </header>
@@ -208,7 +205,7 @@ function renderPublishedPreview(values) {
     <main>
       <article class="news-detail">
         <header class="news-detail-hero">
-          <a class="back-link" href="index.html#noticias">Volver a noticias</a>
+          <a class="back-link" href="index.html">Volver al inicio</a>
           <p class="kicker">${category}</p>
           <h1>${title}</h1>
           <div class="news-meta">
