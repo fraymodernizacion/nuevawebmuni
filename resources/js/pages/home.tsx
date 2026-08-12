@@ -12,6 +12,7 @@ const homeMarkup = `
     <nav class="main-nav" aria-label="Menu principal">
       <a href="#gobierno-abierto">Gobierno Abierto</a>
       <a href="#parque-botanico">Parque Botánico</a>
+      <a href="/rentas">Rentas</a>
       <a href="/gabinete.html">Gobierno</a>
     </nav>
   </header>
@@ -103,7 +104,7 @@ const homeMarkup = `
         <a href="https://www.municipalidad.com/fray/deuda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5V4Zm3 3v3h3V7H8Zm0 6v2h8v-2H8Zm0 4h6v-2H8v2Zm5-9h3V6h-3v2Z"/></svg><span>Contribución Escuela Municipal</span></a>
         <a href="https://www.municipalidad.com/fray/deuda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm2 2h4v3H8V9Zm6 0h2v6h-2V9Zm-6 5h4v1H8v-1Z"/></svg><span>Obras Privadas</span></a>
       </div>
-      <a class="button" href="https://www.municipalidad.com/fray/deuda">Consultar deuda y pagar</a>
+      <a class="button" href="/rentas">Consultar deuda y pagar</a>
     </section>
 
     <section class="section" id="noticias" hidden>
@@ -148,7 +149,7 @@ const homeMarkup = `
         <a href="#">Habilitaciones comerciales</a>
         <a href="#">Licencia de conducir</a>
         <a href="#">Catastro y obras privadas</a>
-        <a href="https://www.municipalidad.com/fray/deuda">Dirección de Rentas</a>
+        <a href="/rentas">Dirección de Rentas</a>
         <a href="#">Defensa del consumidor</a>
         <a href="#">Turismo y patrimonio</a>
       </div>

@@ -1439,6 +1439,40 @@ h2 {
   align-content: start;
 }
 
+.tax-calendar-compact .tax-grid {
+  gap: 12px;
+}
+
+.tax-calendar-compact .tax-card {
+  gap: 10px;
+  padding: 12px;
+}
+
+.tax-calendar-compact .tax-card h3 {
+  font-size: 1.08rem;
+  line-height: 1.1;
+}
+
+.tax-calendar-compact .tax-card p {
+  font-size: .92rem;
+}
+
+.tax-calendar-compact .due-list {
+  gap: 6px;
+}
+
+.tax-calendar-compact .due-list div {
+  padding: 8px 10px;
+}
+
+.tax-calendar-compact .month-grid {
+  gap: 6px;
+}
+
+.tax-calendar-compact .month-grid div {
+  padding: 8px 10px;
+}
+
 .legislation-section {
   background: #fff;
 }
