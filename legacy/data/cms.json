@@ -1,0 +1,47 @@
+{
+  "users": [
+    {
+      "id": "u-super-admin",
+      "name": "Super admin",
+      "email": "admin@fraymunicipalidad.gob.ar",
+      "role": "super_admin",
+      "status": "active",
+      "salt": "e3b8a095964630f3e02c5e48e086d733",
+      "passwordHash": "8ae698234f9b458e008d7cef35e0e46847be8fe8ac5dec3d4df69dd69a3fc1e9fb20a41d81b55625f142f4445c0bb78101a425981ca000d55d6221b561dda9d3"
+    },
+    {
+      "id": "u-prensa",
+      "name": "Área de Prensa",
+      "email": "prensa@fraymunicipalidad.gob.ar",
+      "role": "prensa",
+      "status": "active",
+      "salt": "9f2159feeae98878728b7262128dc5d5",
+      "passwordHash": "bcd0c54b77dcfc46fec4662f821b756e10dc31b4360e0b721c53cfce6da96d25e4eea37e77f6d5cd3f3ece50cf33229a9c756467f056858a39fb2d480ea86baa"
+    },
+    {
+      "id": "u-hacienda",
+      "name": "Secretaría de Hacienda",
+      "email": "hacienda@fraymunicipalidad.gob.ar",
+      "role": "hacienda",
+      "status": "active",
+      "salt": "277078b0e8a9668f2ae36ae0e698ad6c",
+      "passwordHash": "d96263b665367954ee06b34e224cfce09f8853d15dc8c9a09040c8e4acec38bda825997ceae0a6828516a20a02b78243ca7cec8ffe2885f29b0e5cd1144bfdd8"
+    },
+    {
+      "id": "u-gobierno",
+      "name": "Secretaría de Gobierno",
+      "email": "gobierno@fraymunicipalidad.gob.ar",
+      "role": "gobierno",
+      "status": "active",
+      "salt": "d186c4fde4b4633626097a240cad9efb",
+      "passwordHash": "a25c39d5593567d9d861e5ffc06a8b46421b6602516eccc2604e698b05b09ff32be96761b85e630ab659ab78b9b6822e7b9d2d10bd8f13486a5f90562d55e14c"
+    }
+  ],
+  "content": {
+    "noticias": [],
+    "organigrama": [],
+    "contrataciones": [],
+    "boletines": []
+  },
+  "updatedAt": "2026-08-10T13:30:19.093Z"
+}

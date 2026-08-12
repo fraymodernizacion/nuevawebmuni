@@ -1,0 +1,13 @@
+{
+  "nombre": "María Vecina",
+  "avatar": "MV",
+  "dni": "30123456",
+  "telefono": "3834210000",
+  "email": "maria.vecina@email.com",
+  "domicilio": "San José de Piedra Blanca, Fray Mamerto Esquiú",
+  "tramites": ["FME-2026-000001", "FME-2026-000014", "FME-2026-000021"],
+  "favoritos": ["nota-municipio", "reclamo-servicios"],
+  "historial": ["Presentaste una nota", "Consultaste tasas", "Adjuntaste documentación"],
+  "notificaciones": ["Tu solicitud FME-2026-000001 está en revisión", "Falta una foto para completar FME-2026-000014"],
+  "borradores": ["Consulta por poda de árbol"]
+}
