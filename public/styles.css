@@ -1034,8 +1034,7 @@ h2 {
   position: sticky;
   top: 68px;
   z-index: 10;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(86px, 1fr));
+  display: flex;
   gap: 0;
   margin: -24px -14px 24px;
   overflow-x: auto;
@@ -1045,6 +1044,7 @@ h2 {
 
 .year-tabs a {
   display: grid;
+  flex: 0 0 86px;
   min-height: 58px;
   place-items: center;
   color: var(--blue-dark);
@@ -1119,6 +1119,217 @@ h2 {
   background: var(--blue);
   border-radius: 8px;
   font-weight: 850;
+}
+
+.bulletin-tools {
+  display: grid;
+  gap: 10px;
+  margin: -6px 0 16px;
+}
+
+.bulletin-year-select {
+  display: grid;
+  gap: 7px;
+}
+
+.bulletin-year-select > span {
+  color: var(--blue-dark);
+  font-size: .74rem;
+  font-weight: 850;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.bulletin-year-select select {
+  width: 100%;
+  min-height: 46px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  padding: 0 12px;
+  box-shadow: 0 8px 24px rgba(31, 48, 73, .05);
+}
+
+.latest-bulletins {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.latest-bulletins h2,
+.bulletin-results-head h2 {
+  font-size: clamp(1.55rem, 7vw, 2.35rem);
+}
+
+.latest-bulletin-list,
+.bulletin-file-list,
+.bulletin-results {
+  display: grid;
+  gap: 10px;
+}
+
+.bulletin-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.bulletin-year-nav {
+  display: none;
+}
+
+.bulletin-results-head {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.bulletin-results-head h2 {
+  margin: 0;
+}
+
+.bulletin-results-head p:not(.kicker) {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.bulletin-year-group {
+  display: grid;
+  gap: 10px;
+  scroll-margin-top: 96px;
+}
+
+.bulletin-year-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bulletin-year-heading h3 {
+  margin: 0;
+  color: var(--blue-dark);
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.bulletin-year-heading span {
+  color: var(--muted);
+  font-size: .92rem;
+  font-weight: 750;
+}
+
+.bulletin-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 42px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.bulletin-row-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: #fff;
+  background: var(--blue);
+  border-radius: 8px;
+}
+
+.bulletin-row-icon svg,
+.bulletin-row-actions svg {
+  width: 20px;
+  height: 20px;
+}
+
+.bulletin-row-main {
+  min-width: 0;
+}
+
+.bulletin-row-main span {
+  display: none;
+  margin-bottom: 3px;
+  color: var(--green);
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.bulletin-row-main h3 {
+  margin: 0;
+  color: var(--blue-dark);
+  font-size: 1.03rem;
+  line-height: 1.1;
+}
+
+.bulletin-row-main p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: .88rem;
+}
+
+.bulletin-row-actions {
+  display: grid;
+  grid-template-columns: 42px;
+  gap: 0;
+}
+
+.bulletin-row-actions a {
+  display: inline-flex;
+  width: 42px;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 8px;
+  font-size: 0;
+  font-weight: 850;
+}
+
+.bulletin-row-actions a:first-child {
+  color: #fff;
+  background: var(--blue);
+}
+
+.bulletin-row-actions a:last-child {
+  display: none;
+}
+
+.bulletin-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 36px 18px;
+  color: var(--muted);
+  background: var(--soft);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.bulletin-empty svg {
+  width: 38px;
+  height: 38px;
+  color: var(--blue);
+}
+
+.bulletin-empty h3,
+.bulletin-empty p {
+  margin: 0;
+}
+
+.bulletin-empty h3 {
+  color: var(--blue-dark);
+  font-size: 1.25rem;
 }
 
 .procurement-page {
@@ -3063,6 +3274,7 @@ h2 {
   }
 
   .year-tabs a {
+    flex-basis: 96px;
     min-height: 64px;
     font-size: 1.15rem;
   }
@@ -3082,6 +3294,105 @@ h2 {
 
   .bulletin-card {
     min-height: 196px;
+  }
+
+  .bulletin-tools {
+    display: none;
+  }
+
+  .latest-bulletins {
+    margin-bottom: 30px;
+  }
+
+  .latest-bulletin-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .bulletin-layout {
+    grid-template-columns: 160px minmax(0, 1fr);
+    align-items: start;
+    gap: 24px;
+  }
+
+  .bulletin-year-nav {
+    position: sticky;
+    top: 102px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .bulletin-year-nav button {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 12px;
+    color: var(--blue-dark);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 850;
+    text-align: left;
+  }
+
+  .bulletin-year-nav button.active {
+    color: #fff;
+    background: var(--blue);
+    border-color: var(--blue);
+  }
+
+  .bulletin-year-nav strong {
+    color: inherit;
+    font-size: .82rem;
+    opacity: .75;
+  }
+
+  .bulletin-results-head {
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    margin-bottom: 2px;
+  }
+
+  .bulletin-row {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .bulletin-row-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .bulletin-row-actions {
+    grid-column: auto;
+    grid-template-columns: 118px 128px;
+    gap: 8px;
+  }
+
+  .bulletin-row-actions a {
+    width: auto;
+    min-height: 42px;
+    padding: 0 12px;
+    font-size: inherit;
+  }
+
+  .bulletin-row-actions a:last-child {
+    display: inline-flex;
+    color: var(--blue);
+    background: var(--soft);
+    border: 1px solid var(--line);
+  }
+
+  .bulletin-row-main span {
+    display: block;
+  }
+
+  .bulletin-row-main h3 {
+    font-size: 1.28rem;
   }
 
   .procurement-page {

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/index.html', '/', 301);
 Route::inertia('/', 'home')->name('home');
+Route::inertia('/boletin', 'boletin')->name('boletin');
 Route::inertia('/rentas', 'rentas')->name('rentas');
 
 Route::middleware(['auth', 'verified'])->group(function () {

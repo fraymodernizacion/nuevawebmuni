@@ -162,7 +162,7 @@ const homeMarkup = `
       </div>
 
       <div class="open-government-grid">
-        <article class="open-government-card" hidden>
+        <article class="open-government-card">
           <div class="document-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6V2Zm8 2.8V8h3.2L14 4.8ZM8.5 11.5v2h7v-2h-7Zm0 4v2h9v-2h-9Z"/></svg>
           </div>
@@ -171,7 +171,7 @@ const homeMarkup = `
             <h3>Boletín Municipal</h3>
             <p>Consultá decretos, resoluciones, ordenanzas y demás publicaciones oficiales.</p>
           </div>
-          <a class="button" href="/boletin.html">Consultar boletines</a>
+          <a class="button" href="/boletin">Consultar boletines</a>
         </article>
 
         <article class="open-government-card">
@@ -231,7 +231,8 @@ const homeMarkup = `
 
 export default function Home() {
     useEffect(() => {
-        const menuButton = document.querySelector<HTMLButtonElement>('.menu-toggle');
+        const menuButton =
+            document.querySelector<HTMLButtonElement>('.menu-toggle');
         const nav = document.querySelector<HTMLElement>('.main-nav');
 
         if (!menuButton || !nav) {
