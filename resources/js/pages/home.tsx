@@ -11,6 +11,7 @@ const homeMarkup = `
     </button>
     <nav class="main-nav" aria-label="Menu principal">
       <a href="#gobierno-abierto">Gobierno Abierto</a>
+      <a href="/juzgado-faltas">Juzgado de Faltas</a>
       <a href="#parque-botanico">Parque Botánico</a>
       <a href="/rentas">Rentas</a>
       <a href="/gabinete.html">Gobierno</a>
@@ -37,7 +38,7 @@ const homeMarkup = `
           <strong>Dirección de Rentas</strong>
           <span>3834586744</span>
         </a>
-        <a href="https://wa.me/543834195730">
+        <a href="/juzgado-faltas">
           <strong>Juzgado Administrativo Municipal de Faltas</strong>
           <span>3834195730</span>
         </a>
@@ -97,7 +98,7 @@ const homeMarkup = `
       <p>Consultá tus deudas y realizá pagos municipales de forma online.</p>
       <div class="payment-grid">
         <a href="https://www.municipalidad.com/fray/deuda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7v9h-6v-6h-4v6H4v-9Zm2 .9V18h2v-6h8v6h2v-6.1l-6-5.25-6 5.25Z"/></svg><span>Tasa de Barrido, Limpieza e Higiene Urbana</span></a>
-        <a href="https://www.municipalidad.com/fray/deuda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13.4 4.2 6.4 6.4-1.8 1.8-.9-.9-3.9 3.9.8.8-1.8 1.8-6.4-6.4L7.6 9.8l.8.8 3.9-3.9-.8-.8 1.9-1.7ZM4 19h10v2H4v-2Z"/></svg><span>Juzgado de Faltas</span></a>
+        <a href="/juzgado-faltas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13.4 4.2 6.4 6.4-1.8 1.8-.9-.9-3.9 3.9.8.8-1.8 1.8-6.4-6.4L7.6 9.8l.8.8 3.9-3.9-.8-.8 1.9-1.7ZM4 19h10v2H4v-2Z"/></svg><span>Juzgado de Faltas</span></a>
         <a href="https://www.municipalidad.com/fray/deuda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h14v11H5V9Zm1-5h12l2 4H4l2-4Zm2 8v2h8v-2H8Zm0 4v2h5v-2H8Z"/></svg><span>Tasa de Seguridad e Higiene</span></a>
         <a href="https://www.municipalidad.com/fray/deuda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6V3Zm2 3v3h3V6H8Zm5 1v2h3V7h-3Zm-5 5v2h8v-2H8Zm0 4v2h6v-2H8Z"/></svg><span>Tasa Personal</span></a>
         <a href="https://www.municipalidad.com/fray/deuda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3 0 6 2.3 6 5.5 0 4.7-6 11.5-6 11.5S6 13.2 6 8.5C6 5.3 9 3 12 3Zm-4 15h8v2H8v-2Z"/></svg><span>Cobertura Integral de Sepelio</span></a>

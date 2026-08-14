@@ -658,6 +658,17 @@ svg {
     url("assets/optimized/fme-10.jpg") center / cover;
 }
 
+.faults-hero {
+  background:
+    linear-gradient(135deg, rgba(18, 61, 103, .88), rgba(18, 61, 103, .46)),
+    url("assets/optimized/juzgado-faltas-frente.jpeg") center / cover;
+}
+
+.faults-hero h1 {
+  max-width: 12ch;
+  font-size: clamp(2.45rem, 13vw, 5.2rem);
+}
+
 h2 {
   margin: 0;
   color: var(--blue-dark);
@@ -1686,6 +1697,351 @@ h2 {
 
 .legislation-section {
   background: #fff;
+}
+
+.faults-page {
+  background: #fff;
+}
+
+.faults-staff,
+.faults-areas,
+.faults-payment,
+.faults-debt,
+.faults-contact-section,
+.faults-procedure {
+  padding: 32px 14px;
+}
+
+.faults-contact-section,
+.faults-debt {
+  display: grid;
+  gap: 14px;
+  background: var(--soft);
+}
+
+.faults-contact-section .faults-contact-card,
+.faults-debt .faults-service-card {
+  width: min(100%, 760px);
+}
+
+.faults-service-card span,
+.faults-staff-grid span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--green);
+  font-size: .76rem;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.faults-contact-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: 18px;
+  color: #fff;
+  background: var(--blue-dark);
+  border-radius: 8px;
+}
+
+.faults-contact-card h2 {
+  color: #fff;
+  font-size: clamp(1.8rem, 8vw, 2.5rem);
+}
+
+.faults-contact-card dl,
+.faults-staff-grid,
+.faults-area-grid,
+.faults-procedure ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.faults-contact-card dl {
+  padding: 0;
+}
+
+.faults-contact-card div {
+  display: grid;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, .18);
+}
+
+.faults-contact-card dt {
+  color: rgba(255, 255, 255, .68);
+  font-size: .74rem;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.faults-contact-card dd {
+  margin: 0;
+  color: #fff;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.faults-contact-card a {
+  color: #fff;
+  font-weight: 850;
+}
+
+.faults-contact-actions {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, .18);
+}
+
+.faults-contact-actions a.button,
+.faults-contact-actions a.outline-button {
+  width: 100%;
+  border: 1px solid transparent;
+}
+
+.faults-contact-actions a.button {
+  color: #fff;
+  background: #128c4a;
+  border-color: #128c4a;
+}
+
+.faults-contact-actions a.outline-button {
+  color: var(--blue-dark);
+  background: #fff;
+  border-color: #fff;
+}
+
+.faults-service-card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(31, 48, 73, .08);
+}
+
+.faults-service-card h2 {
+  font-size: clamp(1.85rem, 8vw, 2.6rem);
+}
+
+.faults-service-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.faults-staff {
+  background: #fff;
+}
+
+.faults-staff-grid article {
+  overflow: hidden;
+  padding: 16px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.faults-staff-featured {
+  padding: 0 !important;
+}
+
+.faults-staff-featured img {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  object-position: 50% 14%;
+}
+
+.faults-staff-featured div {
+  padding: 16px;
+}
+
+.faults-staff-grid strong {
+  display: block;
+  color: var(--blue-dark);
+  font-size: 1.25rem;
+  line-height: 1.15;
+}
+
+.faults-staff-grid p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.faults-areas {
+  background: var(--soft);
+}
+
+.faults-area-grid article {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(31, 48, 73, .06);
+}
+
+.faults-area-grid svg {
+  width: 48px;
+  height: 48px;
+  padding: 10px;
+  color: #fff;
+  background: var(--green);
+  border-radius: 8px;
+}
+
+.faults-area-grid h3 {
+  margin: 0;
+  color: var(--blue-dark);
+  font-size: 1.18rem;
+  line-height: 1.15;
+}
+
+.faults-area-grid p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.faults-payment {
+  background: #fff;
+}
+
+.faults-payment-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.faults-payment ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: payment-step;
+}
+
+.faults-payment li {
+  position: relative;
+  min-height: 58px;
+  padding: 14px 14px 14px 58px;
+  color: var(--ink);
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  line-height: 1.35;
+  counter-increment: payment-step;
+}
+
+.faults-payment li::before {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: #fff;
+  background: var(--green);
+  border-radius: 50%;
+  content: counter(payment-step);
+  font-weight: 900;
+}
+
+.faults-payment article {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 16px;
+  color: #fff;
+  background: var(--blue-dark);
+  border-radius: 8px;
+}
+
+.faults-payment h3,
+.faults-payment p {
+  margin: 0;
+}
+
+.faults-payment h3 {
+  color: #fff;
+  font-size: 1.45rem;
+  line-height: 1.05;
+}
+
+.faults-payment p {
+  color: rgba(255, 255, 255, .82);
+  line-height: 1.45;
+}
+
+.faults-payment .button {
+  width: 100%;
+  color: var(--blue-dark);
+  background: #fff;
+}
+
+.faults-procedure {
+  color: #fff;
+  background: var(--blue-dark);
+}
+
+.faults-procedure h2 {
+  color: #fff;
+}
+
+.faults-procedure ol {
+  padding: 0;
+  list-style: none;
+  counter-reset: faults-step;
+}
+
+.faults-procedure li {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  min-height: 76px;
+  padding: 16px 16px 16px 68px;
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 8px;
+  counter-increment: faults-step;
+}
+
+.faults-procedure li::before {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: var(--blue-dark);
+  background: #fff;
+  border-radius: 50%;
+  content: counter(faults-step);
+  font-weight: 900;
+}
+
+.faults-procedure strong {
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.faults-procedure p {
+  margin: 0;
+  color: rgba(255, 255, 255, .82);
+  line-height: 1.42;
 }
 
 .legislation-grid {
@@ -3434,8 +3790,73 @@ h2 {
 
   .rentas-actions,
   .tax-calendar,
-  .legislation-section {
+  .legislation-section,
+  .faults-staff,
+  .faults-areas,
+  .faults-payment,
+  .faults-debt,
+  .faults-contact-section,
+  .faults-procedure {
     padding: 56px 32px;
+  }
+
+  .faults-contact-section,
+  .faults-debt {
+    justify-items: start;
+  }
+
+  .faults-contact-card {
+    padding: 24px;
+  }
+
+  .faults-contact-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .faults-service-card {
+    padding: 24px;
+  }
+
+  .faults-staff-grid,
+  .faults-area-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .faults-staff-featured {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+
+  .faults-staff-featured img {
+    height: 100%;
+    min-height: 230px;
+  }
+
+  .faults-staff-featured div {
+    display: grid;
+    align-content: center;
+    padding: 20px;
+  }
+
+  .faults-payment-layout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr);
+    align-items: start;
+    gap: 18px;
+  }
+
+  .faults-payment article {
+    min-height: 100%;
+    padding: 22px;
+  }
+
+  .faults-payment .button {
+    width: max-content;
+  }
+
+  .faults-procedure ol {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
   }
 
   .rentas-actions {
