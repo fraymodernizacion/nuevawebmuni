@@ -28,7 +28,7 @@ class ComplaintPolicy
             return true;
         }
 
-        return $user->isCrewMember()
+        return $user->canUseCrewWork()
             && $user->primary_crew_id !== null
             && $complaint->assigned_crew_id === $user->primary_crew_id;
     }
@@ -84,7 +84,7 @@ class ComplaintPolicy
             return true;
         }
 
-        return $user->isCrewMember()
+        return $user->canUseCrewWork()
             && $user->primary_crew_id !== null
             && $complaint->assigned_crew_id === $user->primary_crew_id;
     }

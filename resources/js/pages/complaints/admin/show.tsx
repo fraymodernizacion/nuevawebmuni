@@ -1,8 +1,10 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Expand, MapPin, MessageCircle } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { Expand, MapPin, MessageCircle, Save } from 'lucide-react';
+import { FormEvent, ReactNode, useState } from 'react';
+import { updateNeighbor } from '@/actions/App/Http/Controllers/Admin/ComplaintController';
 import { update as updateStatus } from '@/actions/App/Http/Controllers/Admin/ComplaintStatusController';
 import { StaticLocationMap } from '@/components/complaints/static-location-map';
+import { WhatsappNotificationToggle } from '@/components/complaints/whatsapp-notification-toggle';
 import {
     Dialog,
     DialogContent,
@@ -35,6 +37,17 @@ export default function AdminComplaintShow({
         location_needs_verification: complaint.location_needs_verification,
         send_whatsapp: false,
     });
+    const neighbor = useForm({
+        first_name: complaint.first_name ?? '',
+        last_name: complaint.last_name ?? '',
+        dni: complaint.dni ?? '',
+        phone: complaint.phone ?? '',
+        email: complaint.email ?? '',
+        street: complaint.street ?? '',
+        street_number: complaint.street_number ?? '',
+        neighborhood: complaint.neighborhood ?? '',
+        location_reference: complaint.location_reference ?? '',
+    });
     const [isMapModalOpen, setIsMapModalOpen] = useState(false);
     const mapUrl =
         complaint.latitude && complaint.longitude
@@ -44,6 +57,13 @@ export default function AdminComplaintShow({
     function submitStatus(event: FormEvent) {
         event.preventDefault();
         status.patch(updateStatus.url(complaint.id));
+    }
+
+    function submitNeighbor(event: FormEvent) {
+        event.preventDefault();
+        neighbor.patch(updateNeighbor.url(complaint.id), {
+            preserveScroll: true,
+        });
     }
 
     return (
@@ -89,18 +109,165 @@ export default function AdminComplaintShow({
 
                     <section className="grid gap-4 lg:grid-cols-2">
                         <Panel title="Vecino">
-                            <Info
-                                label="Nombre"
-                                value={`${complaint.first_name} ${complaint.last_name}`}
-                            />
-                            <Info
-                                label="DNI"
-                                value={complaint.dni ?? 'No informado'}
-                            />
-                            <Info label="Teléfono" value={complaint.phone} />
-                            {complaint.email && (
-                                <Info label="Email" value={complaint.email} />
-                            )}
+                            <form
+                                onSubmit={submitNeighbor}
+                                className="grid gap-3"
+                            >
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <NeighborField
+                                        label="Nombre"
+                                        error={neighbor.errors.first_name}
+                                    >
+                                        <input
+                                            className="input"
+                                            value={neighbor.data.first_name}
+                                            onChange={(event) =>
+                                                neighbor.setData(
+                                                    'first_name',
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </NeighborField>
+                                    <NeighborField
+                                        label="Apellido"
+                                        error={neighbor.errors.last_name}
+                                    >
+                                        <input
+                                            className="input"
+                                            value={neighbor.data.last_name}
+                                            onChange={(event) =>
+                                                neighbor.setData(
+                                                    'last_name',
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </NeighborField>
+                                    <NeighborField
+                                        label="DNI"
+                                        error={neighbor.errors.dni}
+                                    >
+                                        <input
+                                            className="input"
+                                            inputMode="numeric"
+                                            value={neighbor.data.dni}
+                                            onChange={(event) =>
+                                                neighbor.setData(
+                                                    'dni',
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </NeighborField>
+                                    <NeighborField
+                                        label="Teléfono"
+                                        error={neighbor.errors.phone}
+                                    >
+                                        <input
+                                            className="input"
+                                            inputMode="tel"
+                                            value={neighbor.data.phone}
+                                            onChange={(event) =>
+                                                neighbor.setData(
+                                                    'phone',
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </NeighborField>
+                                </div>
+
+                                <NeighborField
+                                    label="Email"
+                                    error={neighbor.errors.email}
+                                >
+                                    <input
+                                        className="input"
+                                        type="email"
+                                        value={neighbor.data.email}
+                                        onChange={(event) =>
+                                            neighbor.setData(
+                                                'email',
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
+                                </NeighborField>
+
+                                <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
+                                    <NeighborField
+                                        label="Calle"
+                                        error={neighbor.errors.street}
+                                    >
+                                        <input
+                                            className="input"
+                                            value={neighbor.data.street}
+                                            onChange={(event) =>
+                                                neighbor.setData(
+                                                    'street',
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </NeighborField>
+                                    <NeighborField
+                                        label="Número"
+                                        error={neighbor.errors.street_number}
+                                    >
+                                        <input
+                                            className="input"
+                                            value={neighbor.data.street_number}
+                                            onChange={(event) =>
+                                                neighbor.setData(
+                                                    'street_number',
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </NeighborField>
+                                </div>
+
+                                <NeighborField
+                                    label="Barrio"
+                                    error={neighbor.errors.neighborhood}
+                                >
+                                    <input
+                                        className="input"
+                                        value={neighbor.data.neighborhood}
+                                        onChange={(event) =>
+                                            neighbor.setData(
+                                                'neighborhood',
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
+                                </NeighborField>
+
+                                <NeighborField
+                                    label="Referencia"
+                                    error={neighbor.errors.location_reference}
+                                >
+                                    <textarea
+                                        className="input min-h-20"
+                                        value={neighbor.data.location_reference}
+                                        onChange={(event) =>
+                                            neighbor.setData(
+                                                'location_reference',
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
+                                </NeighborField>
+
+                                <button
+                                    className="inline-flex min-h-10 w-fit items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                                    disabled={neighbor.processing}
+                                >
+                                    <Save className="size-4" />
+                                    Guardar datos del vecino
+                                </button>
+                            </form>
                         </Panel>
                         <Panel title="Ubicación">
                             <p className="text-sm">
@@ -406,23 +573,14 @@ export default function AdminComplaintShow({
                                     )
                                 }
                             />
-                            <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
-                                <input
-                                    type="checkbox"
-                                    className="mt-1"
-                                    checked={status.data.send_whatsapp}
-                                    onChange={(event) =>
-                                        status.setData(
-                                            'send_whatsapp',
-                                            event.target.checked,
-                                        )
-                                    }
-                                />
-                                <span>
-                                    Enviar notificación por WhatsApp al vecino
-                                    con este cambio de estado.
-                                </span>
-                            </label>
+                            <WhatsappNotificationToggle
+                                checked={status.data.send_whatsapp}
+                                onChange={(checked) =>
+                                    status.setData('send_whatsapp', checked)
+                                }
+                                title="Notificar al vecino"
+                                description="Enviar WhatsApp con este cambio de estado."
+                            />
                             <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground">
                                 <MessageCircle className="size-4" /> Guardar
                                 estado
@@ -457,6 +615,24 @@ function Panel({
             <h2 className="mb-3 text-lg font-semibold">{title}</h2>
             {children}
         </section>
+    );
+}
+
+function NeighborField({
+    label,
+    error,
+    children,
+}: {
+    label: string;
+    error?: string;
+    children: ReactNode;
+}) {
+    return (
+        <label className="grid gap-2 text-sm">
+            <span className="text-xs text-muted-foreground">{label}</span>
+            {children}
+            {error && <span className="text-xs text-destructive">{error}</span>}
+        </label>
     );
 }
 

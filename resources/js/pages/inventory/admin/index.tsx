@@ -13,6 +13,7 @@ import {
 type InventoryItem = {
     id: number;
     code: string;
+    category_label: string | null;
     name: string;
     unit: string;
     current_stock: number;
@@ -27,6 +28,9 @@ type Props = {
     items: {
         data: InventoryItem[];
         links: { url: string | null; label: string; active: boolean }[];
+        from: number | null;
+        to: number | null;
+        total: number;
     };
     filters: {
         search?: string;
@@ -80,7 +84,11 @@ export default function InventoryIndex({
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <Button asChild variant="outline" className="self-start">
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="self-start"
+                        >
                             <Link href={labelBatchUrl} prefetch>
                                 <Printer className="size-4" />
                                 Etiquetas QR
@@ -106,8 +114,7 @@ export default function InventoryIndex({
                     <Metric
                         label="Stock total"
                         value={summary.total_stock.toLocaleString('es-AR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
+                            maximumFractionDigits: 0,
                         })}
                     />
                 </section>
@@ -166,6 +173,7 @@ export default function InventoryIndex({
                                         {item.name}
                                     </h2>
                                     <p className="text-muted-foreground">
+                                        {item.category_label ?? 'Sin tipo'} ·
                                         QR: {item.qr_value}
                                     </p>
                                 </div>
@@ -175,11 +183,10 @@ export default function InventoryIndex({
                                     Stock actual
                                 </p>
                                 <p className="text-lg font-semibold">
-                                    {item.current_stock.toLocaleString('es-AR')}
+                                    {formatStock(item.current_stock)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    Minimo:{' '}
-                                    {item.minimum_stock.toLocaleString('es-AR')}
+                                    Minimo: {formatStock(item.minimum_stock)}
                                 </p>
                             </div>
                             <div>
@@ -211,6 +218,23 @@ export default function InventoryIndex({
                         </div>
                     )}
                 </section>
+
+                {items.total > 0 && (
+                    <nav className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-muted-foreground">
+                            Mostrando {items.from} a {items.to} de {items.total}{' '}
+                            insumos
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {items.links.map((link, indexKey) => (
+                                <PaginationLink
+                                    key={`${link.label}-${indexKey}`}
+                                    link={link}
+                                />
+                            ))}
+                        </div>
+                    </nav>
+                )}
             </div>
         </>
     );
@@ -227,6 +251,46 @@ function Metric({ label, value }: { label: string; value: string | number }) {
             </p>
         </div>
     );
+}
+
+function PaginationLink({
+    link,
+}: {
+    link: { url: string | null; label: string; active: boolean };
+}) {
+    const label = paginationLabel(link.label);
+
+    if (!link.url) {
+        return (
+            <span className="rounded-md border px-3 py-2 text-muted-foreground opacity-50">
+                {label}
+            </span>
+        );
+    }
+
+    return (
+        <Link
+            href={link.url}
+            preserveScroll
+            className={`rounded-md border px-3 py-2 font-medium ${
+                link.active
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card hover:bg-muted/50'
+            }`}
+        >
+            {label}
+        </Link>
+    );
+}
+
+function paginationLabel(label: string) {
+    return label.replace('&laquo;', 'Anterior').replace('&raquo;', 'Siguiente');
+}
+
+function formatStock(value: number): string {
+    return value.toLocaleString('es-AR', {
+        maximumFractionDigits: 0,
+    });
 }
 
 InventoryIndex.layout = {

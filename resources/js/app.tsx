@@ -1,4 +1,5 @@
 import { createInertiaApp } from '@inertiajs/react';
+import { GlobalRequestIndicator } from '@/components/global-request-indicator';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -36,6 +37,7 @@ createInertiaApp({
         return (
             <TooltipProvider delayDuration={0}>
                 {app}
+                <GlobalRequestIndicator />
                 <Toaster />
             </TooltipProvider>
         );

@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\ComplaintStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateComplaintNeighborRequest;
 use App\Models\Complaint;
 use App\Models\ComplaintType;
 use App\Models\Crew;
 use App\Models\Locality;
 use App\Models\OperationalZone;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -114,6 +117,39 @@ class ComplaintController extends Controller
             'options' => $this->options(),
             'nearbyComplaints' => $this->nearbyComplaints($complaint),
         ]);
+    }
+
+    public function updateNeighbor(UpdateComplaintNeighborRequest $request, Complaint $complaint): RedirectResponse
+    {
+        $validated = $request->validated();
+        $oldValues = $complaint->only(array_keys($validated));
+
+        DB::transaction(function () use ($complaint, $validated, $oldValues): void {
+            $complaint->update([
+                'first_name' => $validated['first_name'],
+                'last_name' => filled($validated['last_name'] ?? null) ? $validated['last_name'] : null,
+                'dni' => $validated['dni'],
+                'phone' => $validated['phone'],
+                'email' => filled($validated['email'] ?? null) ? $validated['email'] : null,
+                'street' => filled($validated['street'] ?? null) ? $validated['street'] : null,
+                'street_number' => filled($validated['street_number'] ?? null) ? $validated['street_number'] : null,
+                'neighborhood' => filled($validated['neighborhood'] ?? null) ? $validated['neighborhood'] : null,
+                'location_reference' => filled($validated['location_reference'] ?? null) ? $validated['location_reference'] : null,
+            ]);
+
+            $complaint->statusHistories()->create([
+                'user_id' => auth()->id(),
+                'from_status' => $complaint->current_status,
+                'to_status' => $complaint->current_status,
+                'action' => 'neighbor_updated',
+                'observation' => 'Datos del vecino actualizados.',
+                'old_values' => $oldValues,
+                'new_values' => $complaint->only(array_keys($validated)),
+                'changed_at' => now(),
+            ]);
+        });
+
+        return back()->with('success', 'Datos del vecino actualizados.');
     }
 
     /**

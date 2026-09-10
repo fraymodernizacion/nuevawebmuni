@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'code',
+    'category_code',
     'name',
     'description',
     'unit',

@@ -70,3 +70,48 @@ test('crew intervention deducts inventory and records the material usage', funct
         ->and($complaint->interventions()->first()->materials)->toHaveCount(1)
         ->and($complaint->interventions()->first()->materials->first()->inventory_item_code)->toBe('ALU-TEST-001');
 });
+
+test('crew intervention rejects decimal material quantities', function () {
+    $crew = Crew::where('code', 'ALU-MANANA')->firstOrFail();
+    $crewMember = User::factory()->crewMember()->create([
+        'primary_crew_id' => $crew->id,
+    ]);
+
+    $zone = OperationalZone::where('code', 'A')->firstOrFail();
+    $locality = Locality::whereBelongsTo($zone, 'operationalZone')->firstOrFail();
+    $category = ComplaintCategory::where('code', 'alumbrado_publico')->firstOrFail();
+    $type = ComplaintType::where('complaint_category_id', $category->id)->firstOrFail();
+
+    $complaint = Complaint::factory()->create([
+        'complaint_category_id' => $category->id,
+        'complaint_type_id' => $type->id,
+        'locality_id' => $locality->id,
+        'operational_zone_id' => $zone->id,
+        'assigned_crew_id' => $crew->id,
+        'current_status' => ComplaintStatus::Assigned,
+    ]);
+
+    $inventoryItem = InventoryItem::factory()->create([
+        'code' => 'ALU-TEST-002',
+        'current_stock' => 5,
+        'qr_value' => 'ALU-TEST-002',
+    ]);
+
+    $this->actingAs($crewMember)
+        ->post(route('admin.complaints.interventions.store', $complaint), [
+            'status' => ComplaintStatus::Resolved->value,
+            'response_code' => 'resuelto',
+            'citizen_message' => 'El reclamo fue intervenido y se encuentra resuelto.',
+            'materials' => [
+                [
+                    'inventory_item_id' => $inventoryItem->id,
+                    'quantity' => '1.5',
+                ],
+            ],
+            'send_whatsapp' => false,
+        ])
+        ->assertSessionHasErrors('materials.0.quantity');
+
+    expect($inventoryItem->refresh()->current_stock)->toBe('5.00')
+        ->and(InventoryMovement::query()->whereBelongsTo($inventoryItem)->count())->toBe(0);
+});

@@ -12,6 +12,7 @@ class UserModules
         return [
             'complaints_management' => 'Gestión de reclamos',
             'complaint_operations' => 'Operativa de reclamos',
+            'crew_work' => 'Mis trabajos',
             'intake_management' => 'Mesa de entrada',
             'intake_configuration' => 'Configuración de derivaciones',
             'intake_department' => 'Mis derivaciones',
@@ -37,7 +38,12 @@ class UserModules
     public static function normalize(?array $permissions): array
     {
         return collect(self::keys())
-            ->mapWithKeys(fn (string $key): array => [$key => ($permissions[$key] ?? false) === true])
+            ->mapWithKeys(fn (string $key): array => [$key => self::enabled($permissions[$key] ?? false)])
             ->all();
+    }
+
+    private static function enabled(mixed $value): bool
+    {
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 }

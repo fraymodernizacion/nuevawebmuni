@@ -249,11 +249,13 @@ export function ComplaintMaterialsPicker({
                 <input
                     id="material-quantity"
                     className="input"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={quantity}
-                    onChange={(event) => setQuantity(event.target.value)}
+                    onChange={(event) =>
+                        setQuantity(event.target.value.replace(/\D/g, ''))
+                    }
                 />
                 <button
                     type="button"
@@ -345,18 +347,18 @@ export function ComplaintMaterialsPicker({
 }
 
 function parseQuantity(value: string): number {
-    const parsed = Number(value.replace(',', '.'));
+    const parsed = Number.parseInt(value, 10);
 
     return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function roundQuantity(value: number): number {
-    return Number(value.toFixed(2));
+    return Math.trunc(value);
 }
 
 function formatNumber(value: number | string): string {
     return Number(value).toLocaleString('es-AR', {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
+        maximumFractionDigits: 0,
     });
 }

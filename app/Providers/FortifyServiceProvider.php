@@ -44,7 +44,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::authenticateUsing(function (Request $request): ?User {
-            $user = User::where('username', Str::lower((string) $request->input('username')))->first();
+            $user = $this->findUserForLogin($request);
 
             if ($user && $user->active && Hash::check((string) $request->input('password'), $user->password)) {
                 return $user;
@@ -52,6 +52,29 @@ class FortifyServiceProvider extends ServiceProvider
 
             return null;
         });
+    }
+
+    private function findUserForLogin(Request $request): ?User
+    {
+        $identifier = Str::of((string) $request->input('username'))
+            ->squish()
+            ->lower()
+            ->toString();
+
+        return User::where('username', $identifier)->first()
+            ?? User::where('email', $identifier)->first()
+            ?? $this->findUserByDni($identifier);
+    }
+
+    private function findUserByDni(string $identifier): ?User
+    {
+        $dni = preg_replace('/\D+/', '', $identifier) ?? '';
+
+        if ($dni === '') {
+            return null;
+        }
+
+        return User::where('dni', $dni)->first();
     }
 
     /**

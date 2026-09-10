@@ -1,13 +1,22 @@
 import { Link, useForm } from '@inertiajs/react';
+import { Minus, Plus } from 'lucide-react';
 import type { InertiaLinkProps } from '@inertiajs/react';
 import type { FormEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { index } from '@/routes/admin/inventory';
 
 type InventoryItemFormValues = {
     code: string;
+    category_code: string | null;
     name: string;
     description: string | null;
     unit: string;
@@ -18,6 +27,10 @@ type InventoryItemFormValues = {
 
 type Props = {
     item: InventoryItemFormValues;
+    categories: {
+        code: string;
+        label: string;
+    }[];
     submitLabel: string;
     actionUrl: string;
     method: 'post' | 'patch';
@@ -26,6 +39,7 @@ type Props = {
 
 export function InventoryItemForm({
     item,
+    categories,
     submitLabel,
     actionUrl,
     method,
@@ -33,13 +47,43 @@ export function InventoryItemForm({
 }: Props) {
     const form = useForm({
         code: item.code,
+        category_code: item.category_code ?? '',
         name: item.name,
         description: item.description ?? '',
         unit: item.unit,
-        current_stock: String(item.current_stock),
-        minimum_stock: String(item.minimum_stock),
+        current_stock: integerValue(item.current_stock),
+        minimum_stock: integerValue(item.minimum_stock),
+        stock_adjustment_type: '',
+        stock_adjustment_quantity: '',
         active: item.active,
     });
+
+    const adjustmentQuantity = Number(form.data.stock_adjustment_quantity);
+    const currentStock = Number(form.data.current_stock);
+    const adjustmentPreview =
+        method === 'patch' &&
+        form.data.stock_adjustment_type &&
+        Number.isFinite(adjustmentQuantity) &&
+        adjustmentQuantity > 0 &&
+        Number.isFinite(currentStock)
+            ? form.data.stock_adjustment_type === 'add'
+                ? currentStock + adjustmentQuantity
+                : currentStock - adjustmentQuantity
+            : null;
+
+    function selectAdjustment(type: 'add' | 'subtract') {
+        form.setData(
+            'stock_adjustment_type',
+            form.data.stock_adjustment_type === type ? '' : type,
+        );
+    }
+
+    function setIntegerField(
+        field: 'current_stock' | 'minimum_stock' | 'stock_adjustment_quantity',
+        value: string,
+    ) {
+        form.setData(field, value.replace(/\D/g, ''));
+    }
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -58,15 +102,27 @@ export function InventoryItemForm({
     return (
         <form onSubmit={submit} className="grid gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Código" error={form.errors.code}>
-                    <Input
-                        value={form.data.code}
-                        onChange={(event) =>
-                            form.setData('code', event.target.value)
+                <Field label="Tipo de insumo" error={form.errors.category_code}>
+                    <Select
+                        value={form.data.category_code}
+                        onValueChange={(value) =>
+                            form.setData('category_code', value)
                         }
-                        autoComplete="off"
-                        placeholder="ALU-0001"
-                    />
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {categories.map((category) => (
+                                <SelectItem
+                                    key={category.code}
+                                    value={category.code}
+                                >
+                                    {category.code} - {category.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </Field>
 
                 <Field label="Unidad" error={form.errors.unit}>
@@ -79,6 +135,19 @@ export function InventoryItemForm({
                     />
                 </Field>
             </div>
+
+            {method === 'patch' && (
+                <Field label="Código" error={form.errors.code}>
+                    <Input
+                        value={form.data.code}
+                        onChange={(event) =>
+                            form.setData('code', event.target.value)
+                        }
+                        autoComplete="off"
+                        placeholder="ALU-LUM-001"
+                    />
+                </Field>
+            )}
 
             <Field label="Nombre" error={form.errors.name}>
                 <Input
@@ -104,28 +173,96 @@ export function InventoryItemForm({
             <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Stock actual" error={form.errors.current_stock}>
                     <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        disabled={
+                            method === 'patch' &&
+                            form.data.stock_adjustment_type !== ''
+                        }
                         value={form.data.current_stock}
                         onChange={(event) =>
-                            form.setData('current_stock', event.target.value)
+                            setIntegerField('current_stock', event.target.value)
                         }
                     />
                 </Field>
 
                 <Field label="Stock minimo" error={form.errors.minimum_stock}>
                     <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={form.data.minimum_stock}
                         onChange={(event) =>
-                            form.setData('minimum_stock', event.target.value)
+                            setIntegerField('minimum_stock', event.target.value)
                         }
                     />
                 </Field>
             </div>
+
+            {method === 'patch' && (
+                <div className="grid gap-3 rounded-md border bg-muted/20 p-3">
+                    <Label>Ajuste de stock</Label>
+                    <div className="grid gap-3 sm:grid-cols-[auto_auto_1fr]">
+                        <Button
+                            type="button"
+                            variant={
+                                form.data.stock_adjustment_type === 'add'
+                                    ? 'default'
+                                    : 'outline'
+                            }
+                            onClick={() => selectAdjustment('add')}
+                        >
+                            <Plus className="size-4" />
+                            Sumar
+                        </Button>
+                        <Button
+                            type="button"
+                            variant={
+                                form.data.stock_adjustment_type === 'subtract'
+                                    ? 'default'
+                                    : 'outline'
+                            }
+                            onClick={() => selectAdjustment('subtract')}
+                        >
+                            <Minus className="size-4" />
+                            Restar
+                        </Button>
+                        <Field
+                            label="Cantidad"
+                            error={form.errors.stock_adjustment_quantity}
+                        >
+                            <Input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={form.data.stock_adjustment_quantity}
+                                onChange={(event) =>
+                                    setIntegerField(
+                                        'stock_adjustment_quantity',
+                                        event.target.value,
+                                    )
+                                }
+                                disabled={!form.data.stock_adjustment_type}
+                            />
+                        </Field>
+                    </div>
+                    {adjustmentPreview !== null && (
+                        <p
+                            className={`text-sm font-medium ${
+                                adjustmentPreview < 0
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground'
+                            }`}
+                        >
+                            Stock resultante:{' '}
+                            {adjustmentPreview.toLocaleString('es-AR', {
+                                maximumFractionDigits: 0,
+                            })}
+                        </p>
+                    )}
+                </div>
+            )}
 
             <label className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-3 text-sm">
                 <input
@@ -167,4 +304,12 @@ function Field({
             {error && <p className="text-sm text-destructive">{error}</p>}
         </label>
     );
+}
+
+function integerValue(value: string | number): string {
+    const numberValue = Number(value);
+
+    return Number.isFinite(numberValue)
+        ? Math.round(numberValue).toString()
+        : '';
 }

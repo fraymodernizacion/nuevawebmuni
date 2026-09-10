@@ -1,11 +1,12 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Clock4, Eye, List, Map, MapPin, Navigation } from 'lucide-react';
+import { Clock4, Eye, List, Map, MapPin } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { PendingComplaintsMap } from '@/components/complaints/pending-complaints-map';
 import {
     finish,
     show,
 } from '@/actions/App/Http/Controllers/CrewWorkController';
+import { BackButton } from '@/components/back-button';
+import { PendingComplaintsMap } from '@/components/complaints/pending-complaints-map';
 import {
     statusBadgeClass,
     statusLabel,
@@ -47,11 +48,14 @@ export default function CrewWorkIndex({
             <Head title="Mis trabajos" />
             <div className="flex flex-col gap-4 p-3 pb-24 sm:p-4 sm:pb-4">
                 <header className="grid gap-3 rounded-lg border bg-card p-4 shadow-sm">
-                    <h1 className="text-2xl font-semibold tracking-normal">
-                        {canManageComplaintOperations
-                            ? 'Operativo de reclamos'
-                            : 'Mis trabajos'}
-                    </h1>
+                    <div className="flex items-start justify-between gap-3">
+                        <h1 className="text-2xl font-semibold tracking-normal">
+                            {canManageComplaintOperations
+                                ? 'Operativo de reclamos'
+                                : 'Mis trabajos'}
+                        </h1>
+                        <BackButton />
+                    </div>
                     {showTodayRoute && (
                         <p className="text-sm text-muted-foreground">
                             Recorrido de hoy · Zona{' '}

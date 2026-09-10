@@ -100,6 +100,7 @@ export function AppSidebar() {
             auth.user?.role === 'admin' ||
             auth.user?.role === 'crew');
     const canViewCrewWork =
+        canUseModule(auth.user, 'crew_work') ||
         canUseModule(auth.user, 'complaint_operations') ||
         canUseComplaintManagement ||
         auth.user?.role === 'crew';

@@ -43,7 +43,7 @@ class StoreComplaintInterventionRequest extends FormRequest
             'photo_type' => ['nullable', Rule::in([ComplaintPhotoType::Intervention->value, ComplaintPhotoType::Resolution->value])],
             'materials' => ['nullable', 'array', 'max:30'],
             'materials.*.inventory_item_id' => ['required_with:materials', 'integer', 'exists:inventory_items,id'],
-            'materials.*.quantity' => ['required_with:materials', 'numeric', 'gt:0', 'max:99999'],
+            'materials.*.quantity' => ['required_with:materials', 'integer', 'min:1', 'max:99999'],
             'send_whatsapp' => ['nullable', 'boolean'],
         ];
     }

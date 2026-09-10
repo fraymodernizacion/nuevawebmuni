@@ -79,6 +79,7 @@ class UserManagementController extends Controller
         $data = Arr::only($validated, [
             'name',
             'username',
+            'dni',
             'email',
             'role',
             'active',
@@ -103,6 +104,7 @@ class UserManagementController extends Controller
             'id' => $user->id,
             'name' => $user->name,
             'username' => $user->username,
+            'dni' => $user->dni,
             'email' => $user->email,
             'role' => $user->role,
             'active' => $user->active,

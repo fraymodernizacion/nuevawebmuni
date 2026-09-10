@@ -20,6 +20,7 @@ import {
     type ComplaintMaterialInput,
 } from '@/components/complaints/complaint-materials-picker';
 import { StaticLocationMap } from '@/components/complaints/static-location-map';
+import { WhatsappNotificationToggle } from '@/components/complaints/whatsapp-notification-toggle';
 import {
     historyActionLabel,
     statusBadgeClass,
@@ -525,23 +526,13 @@ export default function CrewComplaintShow({
                                 )}
                             </FieldBlock>
 
-                            <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
-                                <input
-                                    type="checkbox"
-                                    className="mt-1"
-                                    checked={form.data.send_whatsapp}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'send_whatsapp',
-                                            event.target.checked,
-                                        )
-                                    }
-                                />
-                                <span>
-                                    Avisar al vecino por WhatsApp usando el
-                                    mensaje al vecino.
-                                </span>
-                            </label>
+                            <WhatsappNotificationToggle
+                                checked={form.data.send_whatsapp}
+                                onChange={(checked) =>
+                                    form.setData('send_whatsapp', checked)
+                                }
+                                description="Enviar WhatsApp usando el mensaje al vecino."
+                            />
 
                             <button
                                 disabled={form.processing}

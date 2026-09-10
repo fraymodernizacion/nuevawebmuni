@@ -211,6 +211,87 @@ test('complaint management search is normalized across code phone locality and p
     }
 });
 
+test('operator can update complaint neighbor data and records history', function () {
+    $operator = User::factory()->operator()->create();
+    $complaint = Complaint::factory()->create([
+        'first_name' => 'Ana',
+        'last_name' => 'Gomez',
+        'dni' => '30123456',
+        'phone' => '543834000000',
+        'email' => null,
+        'street' => 'San Martin',
+        'street_number' => '100',
+        'neighborhood' => 'Centro',
+        'location_reference' => 'Frente a la plaza',
+    ]);
+
+    $this->actingAs($operator)
+        ->patch(route('admin.complaints.neighbor.update', $complaint), [
+            'first_name' => 'Ana Maria',
+            'last_name' => 'Gomez',
+            'dni' => '30.999.888',
+            'phone' => '383 455 6677',
+            'email' => 'ANA@EXAMPLE.COM',
+            'street' => 'Belgrano',
+            'street_number' => '250',
+            'neighborhood' => 'Norte',
+            'location_reference' => 'Porton azul',
+        ])
+        ->assertRedirect();
+
+    $complaint->refresh();
+
+    expect($complaint->first_name)->toBe('Ana Maria')
+        ->and($complaint->dni)->toBe('30999888')
+        ->and($complaint->phone)->toBe('543834556677')
+        ->and($complaint->email)->toBe('ana@example.com')
+        ->and($complaint->street)->toBe('Belgrano')
+        ->and($complaint->statusHistories()->where('action', 'neighbor_updated')->exists())->toBeTrue();
+});
+
+test('superadmin can update complaint neighbor data', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+    $complaint = Complaint::factory()->create([
+        'phone' => '543834000000',
+    ]);
+
+    $this->actingAs($superAdmin)
+        ->patch(route('admin.complaints.neighbor.update', $complaint), [
+            'first_name' => 'Carlos',
+            'last_name' => 'Rojas',
+            'dni' => '28.111.222',
+            'phone' => '383 422 3344',
+            'email' => null,
+            'street' => null,
+            'street_number' => null,
+            'neighborhood' => null,
+            'location_reference' => null,
+        ])
+        ->assertRedirect();
+
+    expect($complaint->refresh()->phone)->toBe('543834223344')
+        ->and($complaint->first_name)->toBe('Carlos')
+        ->and($complaint->dni)->toBe('28111222');
+});
+
+test('crew users cannot update complaint neighbor data from management', function () {
+    $crewUser = User::factory()->crewMember()->create();
+    $complaint = Complaint::factory()->create([
+        'phone' => '543834000000',
+    ]);
+
+    $this->actingAs($crewUser)
+        ->patch(route('admin.complaints.neighbor.update', $complaint), [
+            'first_name' => 'Carlos',
+            'last_name' => 'Rojas',
+            'dni' => '28111222',
+            'phone' => '3834223344',
+        ])
+        ->assertForbidden();
+
+    expect($complaint->refresh()->phone)->toBe('543834000000');
+});
+
 test('crew leader can open assigned complaint detail page', function () {
     $crew = Crew::firstOrFail();
     $crewLeader = User::factory()->crewMember()->create([
@@ -237,6 +318,40 @@ test('crew leader can open assigned complaint detail page', function () {
             ->has('responseOptions')
             ->where('responseOptions.0.code', 'falta_insumos'),
         );
+});
+
+test('user with crew work permission can open assigned work', function () {
+    $crew = Crew::firstOrFail();
+    $user = User::factory()->warehouseManager()->create([
+        'primary_crew_id' => $crew->id,
+        'module_permissions' => ['crew_work' => true],
+    ]);
+    $zone = OperationalZone::where('code', 'A')->firstOrFail();
+    $locality = Locality::whereBelongsTo($zone, 'operationalZone')->firstOrFail();
+    $category = ComplaintCategory::where('code', 'alumbrado_publico')->firstOrFail();
+    $type = ComplaintType::where('complaint_category_id', $category->id)->firstOrFail();
+    $complaint = Complaint::factory()->create([
+        'complaint_category_id' => $category->id,
+        'complaint_type_id' => $type->id,
+        'locality_id' => $locality->id,
+        'operational_zone_id' => $zone->id,
+        'assigned_crew_id' => $crew->id,
+        'current_status' => ComplaintStatus::Assigned,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('crew.work.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('complaints/crew/index')
+            ->where('summary.pending', 1)
+            ->has('complaints', 1)
+            ->where('complaints.0.id', $complaint->id),
+        );
+
+    $this->actingAs($user)
+        ->get(route('crew.work.show', $complaint))
+        ->assertOk();
 });
 
 test('crew work index only exposes assigned pending complaints on the map', function () {

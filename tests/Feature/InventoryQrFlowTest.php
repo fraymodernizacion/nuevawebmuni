@@ -88,6 +88,25 @@ test('operative user can record an exit that leaves negative stock and backend a
         ->and($movement->metadata['user_agent'])->toBe('Municipal QR Scanner');
 });
 
+test('quick inventory movements reject decimal quantities', function () {
+    $crewUser = User::factory()->crewMember()->create();
+    $item = InventoryItem::factory()->create([
+        'code' => 'ALU-LUM-004',
+        'qr_value' => 'ALU-LUM-004',
+        'current_stock' => 5,
+    ]);
+
+    $this->actingAs($crewUser)
+        ->post(route('inventory.qr.movements.store', ['code' => $item->code]), [
+            'movement_type' => 'exit',
+            'quantity' => '1.5',
+        ])
+        ->assertSessionHasErrors('quantity');
+
+    expect($item->refresh()->current_stock)->toBe('5.00')
+        ->and(InventoryMovement::query()->whereBelongsTo($item)->count())->toBe(0);
+});
+
 test('operative user cannot record inventory entries but warehouse manager can', function () {
     $crewUser = User::factory()->crewMember()->create();
     $warehouseManager = User::factory()->warehouseManager()->create();

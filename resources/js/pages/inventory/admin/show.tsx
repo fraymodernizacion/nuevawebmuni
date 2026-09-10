@@ -21,6 +21,7 @@ type Props = {
     item: {
         id: number;
         code: string;
+        category_label: string | null;
         name: string;
         description: string | null;
         unit: string;
@@ -66,8 +67,14 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                 </header>
 
                 <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <Metric label="Stock actual" value={item.current_stock} />
-                    <Metric label="Stock minimo" value={item.minimum_stock} />
+                    <Metric
+                        label="Stock actual"
+                        value={formatStock(item.current_stock)}
+                    />
+                    <Metric
+                        label="Stock minimo"
+                        value={formatStock(item.minimum_stock)}
+                    />
                     <Metric label="Movimientos" value={item.movements_count} />
                     <Metric
                         label="Estado"
@@ -84,6 +91,10 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                             <Row
                                 label="Descripcion"
                                 value={item.description ?? 'Sin descripcion'}
+                            />
+                            <Row
+                                label="Tipo"
+                                value={item.category_label ?? 'Sin tipo'}
                             />
                             <Row label="Unidad" value={item.unit} />
                             <Row
@@ -168,7 +179,9 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                                             <p className="text-xs font-semibold text-muted-foreground uppercase">
                                                 Cantidad
                                             </p>
-                                            <p>{movement.quantity}</p>
+                                            <p>
+                                                {formatStock(movement.quantity)}
+                                            </p>
                                         </div>
                                         <div>
                                             <p className="text-xs font-semibold text-muted-foreground uppercase">
@@ -215,6 +228,12 @@ function Row({ label, value }: { label: string; value: string }) {
             <span className="text-right font-medium">{value}</span>
         </div>
     );
+}
+
+function formatStock(value: number): string {
+    return value.toLocaleString('es-AR', {
+        maximumFractionDigits: 0,
+    });
 }
 
 InventoryShow.layout = {

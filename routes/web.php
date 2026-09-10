@@ -58,6 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('asignacion-masiva', [ComplaintAssignmentController::class, 'bulk'])->name('bulk_assign');
         Route::get('/', [ComplaintController::class, 'index'])->name('index');
         Route::get('{complaint}', [ComplaintController::class, 'show'])->name('show');
+        Route::patch('{complaint}/vecino', [ComplaintController::class, 'updateNeighbor'])->name('neighbor.update');
         Route::post('{complaint}/asignar', [ComplaintAssignmentController::class, 'store'])->name('assign');
         Route::patch('{complaint}/estado', [ComplaintStatusController::class, 'update'])->name('status.update');
         Route::post('{complaint}/intervenciones', [ComplaintInterventionController::class, 'store'])->name('interventions.store');

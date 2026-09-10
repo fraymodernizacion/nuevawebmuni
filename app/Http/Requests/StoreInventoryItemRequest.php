@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\InventoryItemCategories;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,12 +25,12 @@ class StoreInventoryItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:100', Rule::unique('inventory_items', 'code')],
+            'category_code' => ['required', 'string', Rule::in(InventoryItemCategories::codes()->all())],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'unit' => ['required', 'string', 'max:50'],
-            'current_stock' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
-            'minimum_stock' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
+            'current_stock' => ['required', 'integer', 'min:0', 'max:9999999999'],
+            'minimum_stock' => ['required', 'integer', 'min:0', 'max:9999999999'],
             'active' => ['nullable', 'boolean'],
         ];
     }

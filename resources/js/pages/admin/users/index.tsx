@@ -3,6 +3,8 @@ import {
     CheckCircle2,
     CircleOff,
     KeyRound,
+    ShieldCheck,
+    ShieldOff,
     Save,
     UserPlus,
 } from 'lucide-react';
@@ -21,6 +23,7 @@ type ManagedUser = {
     id: number;
     name: string;
     username: string;
+    dni?: string | null;
     email: string;
     role: string;
     active: boolean;
@@ -36,6 +39,7 @@ type ModuleOption = { key: string; label: string };
 type FormData = {
     name: string;
     username: string;
+    dni: string;
     email: string;
     password: string;
     role: string;
@@ -58,6 +62,7 @@ type Props = {
 const emptyForm = (modules: ModuleOption[]): FormData => ({
     name: '',
     username: '',
+    dni: '',
     email: '',
     password: '',
     role: 'operator',
@@ -68,6 +73,22 @@ const emptyForm = (modules: ModuleOption[]): FormData => ({
     primary_crew_id: '',
     intake_department_id: '',
 });
+
+function selectedModulePermissions(
+    user: ManagedUser,
+    modules: ModuleOption[],
+): Record<string, boolean> {
+    return Object.fromEntries(
+        modules.map((module) => [
+            module.key,
+            isEnabledPermission(user.module_permissions[module.key]),
+        ]),
+    );
+}
+
+function isEnabledPermission(value: unknown): boolean {
+    return value === true || value === 1 || value === '1' || value === 'true';
+}
 
 export default function UserManagementIndex({ users, options }: Props) {
     const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
@@ -86,14 +107,15 @@ export default function UserManagementIndex({ users, options }: Props) {
         form.setData({
             name: user.name,
             username: user.username,
+            dni: user.dni ?? '',
             email: user.email,
             password: '',
             role: user.role,
             active: user.active,
-            module_permissions: {
-                ...initialData.module_permissions,
-                ...user.module_permissions,
-            },
+            module_permissions: selectedModulePermissions(
+                user,
+                options.modules,
+            ),
             primary_crew_id: user.primary_crew_id
                 ? String(user.primary_crew_id)
                 : '',
@@ -166,7 +188,12 @@ export default function UserManagementIndex({ users, options }: Props) {
                                             {user.name}
                                         </h2>
                                         <p className="text-sm text-muted-foreground">
-                                            @{user.username} · {user.email}
+                                            @{user.username}
+                                            {user.dni
+                                                ? ` · DNI ${user.dni}`
+                                                : ''}
+                                            {' · '}
+                                            {user.email}
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
@@ -257,6 +284,24 @@ export default function UserManagementIndex({ users, options }: Props) {
                                     required
                                 />
                             </Field>
+                            <Field label="DNI" error={form.errors.dni}>
+                                <Input
+                                    inputMode="numeric"
+                                    value={form.data.dni}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'dni',
+                                            event.target.value.replace(
+                                                /\D+/g,
+                                                '',
+                                            ),
+                                        )
+                                    }
+                                    placeholder="Sólo números"
+                                />
+                            </Field>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
                             <Field label="Correo" error={form.errors.email}>
                                 <Input
                                     type="email"
@@ -391,23 +436,50 @@ export default function UserManagementIndex({ users, options }: Props) {
                             </div>
                             <div className="grid gap-2">
                                 {options.modules.map((module) => (
-                                    <label
+                                    <div
                                         key={module.key}
-                                        className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm"
+                                        className={`flex items-center justify-between gap-3 rounded-md border p-3 text-sm transition ${
+                                            form.data.module_permissions[
+                                                module.key
+                                            ]
+                                                ? 'border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-100'
+                                                : 'bg-background'
+                                        }`}
                                     >
-                                        <span>{module.label}</span>
-                                        <input
-                                            type="checkbox"
-                                            checked={
+                                        <span className="flex min-w-0 items-center gap-2 font-medium">
+                                            {form.data.module_permissions[
+                                                module.key
+                                            ] ? (
+                                                <ShieldCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                                            ) : (
+                                                <ShieldOff className="size-4 shrink-0 text-muted-foreground" />
+                                            )}
+                                            <span className="truncate">
+                                                {module.label}
+                                            </span>
+                                        </span>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant={
                                                 form.data.module_permissions[
                                                     module.key
-                                                ] ?? false
+                                                ]
+                                                    ? 'outline'
+                                                    : 'secondary'
                                             }
-                                            onChange={() =>
+                                            onClick={() =>
                                                 togglePermission(module.key)
                                             }
-                                        />
-                                    </label>
+                                            className="shrink-0"
+                                        >
+                                            {form.data.module_permissions[
+                                                module.key
+                                            ]
+                                                ? 'Quitar'
+                                                : 'Asignar'}
+                                        </Button>
+                                    </div>
                                 ))}
                             </div>
                         </section>

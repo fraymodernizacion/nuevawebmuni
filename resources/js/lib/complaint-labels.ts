@@ -38,6 +38,7 @@ export const historyActionLabels: Record<string, string> = {
     assigned: 'Asignado a cuadrilla',
     reassigned: 'Reasignado a cuadrilla',
     status_changed: 'Cambio de estado',
+    neighbor_updated: 'Datos del vecino actualizados',
     intervention: 'Intervención de cuadrilla',
     photo_uploaded: 'Foto cargada',
 };

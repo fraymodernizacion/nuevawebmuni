@@ -23,6 +23,7 @@ class StoreManagedUserRequest extends FormRequest
     {
         $this->merge([
             'username' => Str::lower((string) $this->input('username')),
+            'dni' => $this->digitsOnly((string) $this->input('dni')),
             'active' => $this->boolean('active'),
             'module_permissions' => UserModules::normalize((array) $this->input('module_permissions', [])),
         ]);
@@ -38,6 +39,7 @@ class StoreManagedUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:60', 'regex:/^[a-z0-9._-]+$/', Rule::unique(User::class)],
+            'dni' => ['nullable', 'digits_between:7,9', Rule::unique(User::class)],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', Rule::in(['superadmin', 'admin', 'operator', 'crew', 'intake_department', 'warehouse_manager'])],
@@ -47,5 +49,12 @@ class StoreManagedUserRequest extends FormRequest
             'primary_crew_id' => ['nullable', Rule::exists('crews', 'id')],
             'intake_department_id' => ['nullable', Rule::exists('intake_departments', 'id')],
         ];
+    }
+
+    private function digitsOnly(string $value): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $value) ?? '';
+
+        return $digits === '' ? null : $digits;
     }
 }

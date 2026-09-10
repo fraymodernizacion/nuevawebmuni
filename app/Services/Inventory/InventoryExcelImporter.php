@@ -4,6 +4,7 @@ namespace App\Services\Inventory;
 
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
+use App\Support\InventoryItemCategories;
 use DOMDocument;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -55,6 +56,7 @@ class InventoryExcelImporter
                 $previousStock = (float) ($item->current_stock ?? 0);
 
                 $item->fill([
+                    'category_code' => $this->categoryCode($code),
                     'name' => $name,
                     'description' => null,
                     'unit' => 'unidad',
@@ -101,6 +103,12 @@ class InventoryExcelImporter
         if (! is_file($path)) {
             throw new RuntimeException("No se encontro el archivo: {$path}");
         }
+    }
+
+    private function categoryCode(string $code): ?string
+    {
+        return InventoryItemCategories::codes()
+            ->first(fn (string $categoryCode): bool => str_starts_with($code, "{$categoryCode}-"));
     }
 
     /**

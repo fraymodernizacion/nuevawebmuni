@@ -5,6 +5,7 @@ import { InventoryItemForm } from './item-form';
 type Props = {
     item: {
         code: string;
+        category_code: string;
         name: string;
         description: string | null;
         unit: string;
@@ -12,9 +13,13 @@ type Props = {
         minimum_stock: string;
         active: boolean;
     };
+    categories: {
+        code: string;
+        label: string;
+    }[];
 };
 
-export default function InventoryCreate({ item }: Props) {
+export default function InventoryCreate({ item, categories }: Props) {
     return (
         <>
             <Head title="Nuevo insumo" />
@@ -31,6 +36,7 @@ export default function InventoryCreate({ item }: Props) {
                 <div className="rounded-lg border bg-card p-4">
                     <InventoryItemForm
                         item={item}
+                        categories={categories}
                         submitLabel="Crear insumo"
                         actionUrl={store.url()}
                         method="post"

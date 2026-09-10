@@ -30,7 +30,9 @@ export default function Login({ status, canResetPassword }: Props) {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="username">Usuario</Label>
+                                <Label htmlFor="username">
+                                    Usuario, email o DNI
+                                </Label>
                                 <Input
                                     id="username"
                                     type="text"
@@ -39,7 +41,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="username"
-                                    placeholder="superadmin"
+                                    placeholder="usuario, email o DNI"
                                 />
                                 <InputError message={errors.username} />
                             </div>

@@ -26,7 +26,7 @@ class StoreInventoryQuickMovementRequest extends FormRequest
     {
         return [
             'movement_type' => ['required', 'string', Rule::in(['exit', 'entry', 'recycled'])],
-            'quantity' => ['required', 'numeric', 'gt:0', 'max:9999999999.99'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:9999999999'],
             'reference' => ['nullable', 'string', 'max:255'],
             'reason' => ['nullable', 'string', 'max:500'],
         ];

@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $name
  * @property string|null $username
+ * @property string|null $dni
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -27,7 +28,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'username', 'email', 'password', 'role', 'module_permissions', 'active', 'primary_crew_id', 'intake_department_id'])]
+#[Fillable(['name', 'username', 'dni', 'email', 'password', 'role', 'module_permissions', 'active', 'primary_crew_id', 'intake_department_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -61,7 +62,12 @@ class User extends Authenticatable
 
     public function canUseComplaintOperations(): bool
     {
-        return $this->hasAnyModulePermission(['complaint_operations']) || $this->canManageComplaints() || $this->isCrewMember();
+        return $this->canUseCrewWork();
+    }
+
+    public function canUseCrewWork(): bool
+    {
+        return $this->hasAnyModulePermission(['crew_work', 'complaint_operations']) || $this->canManageComplaints() || $this->isCrewMember();
     }
 
     public function canCoordinateCrews(): bool

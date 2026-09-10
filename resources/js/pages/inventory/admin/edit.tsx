@@ -6,6 +6,7 @@ type Props = {
     item: {
         id: number;
         code: string;
+        category_code: string | null;
         name: string;
         description: string | null;
         unit: string;
@@ -13,9 +14,13 @@ type Props = {
         minimum_stock: number;
         active: boolean;
     };
+    categories: {
+        code: string;
+        label: string;
+    }[];
 };
 
-export default function InventoryEdit({ item }: Props) {
+export default function InventoryEdit({ item, categories }: Props) {
     return (
         <>
             <Head title={`Editar ${item.code}`} />
@@ -33,6 +38,7 @@ export default function InventoryEdit({ item }: Props) {
                 <div className="rounded-lg border bg-card p-4">
                     <InventoryItemForm
                         item={item}
+                        categories={categories}
                         submitLabel="Guardar cambios"
                         actionUrl={update.url(item.id)}
                         method="patch"

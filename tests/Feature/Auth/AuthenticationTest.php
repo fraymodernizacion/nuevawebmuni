@@ -22,6 +22,32 @@ test('users can authenticate using the login screen', function () {
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
+test('users can authenticate with email', function () {
+    $user = User::factory()->create();
+
+    $response = $this->post(route('login.store'), [
+        'username' => strtoupper($user->email),
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('users can authenticate with dni', function () {
+    $user = User::factory()->create([
+        'dni' => '30123456',
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'username' => '30.123.456',
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('dashboard', absolute: false));
+});
+
 test('users with two factor enabled are redirected to two factor challenge', function () {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 

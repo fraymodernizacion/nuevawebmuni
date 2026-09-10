@@ -23,7 +23,7 @@ class CrewWorkController extends Controller
         $routePlanningEnabled = (bool) config('complaints.route_planning_enabled');
         $canManageComplaintOperations = $user->canUseComplaintManagement();
 
-        abort_unless($user->canUseComplaintOperations(), 403);
+        abort_unless($user->canUseCrewWork(), 403);
 
         $complaints = Complaint::with(['type:id,name', 'locality:id,name', 'operationalZone:id,code,name,color'])
             ->when(! $canManageComplaintOperations, fn ($query) => $query->where('assigned_crew_id', $user->primary_crew_id))
@@ -100,7 +100,7 @@ class CrewWorkController extends Controller
 
     public function show(Complaint $complaint): Response
     {
-        abort_unless(request()->user()->canUseComplaintOperations(), 403);
+        abort_unless(request()->user()->canUseCrewWork(), 403);
 
         Gate::authorize('view', $complaint);
 
@@ -152,7 +152,7 @@ class CrewWorkController extends Controller
         $user = request()->user();
 
         abort_unless(
-            $user->isCrewMember()
+            $user->canUseCrewWork()
                 && $user->primary_crew_id !== null
                 && $workRoute->crew_id === $user->primary_crew_id,
             403,

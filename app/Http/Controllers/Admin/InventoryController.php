@@ -7,8 +7,11 @@ use App\Http\Requests\StoreInventoryItemRequest;
 use App\Http\Requests\UpdateInventoryItemRequest;
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
+use App\Services\Inventory\GenerateInventoryItemCode;
+use App\Support\InventoryItemCategories;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -70,6 +73,7 @@ class InventoryController extends Controller
         return Inertia::render('inventory/admin/create', [
             'item' => [
                 'code' => '',
+                'category_code' => '',
                 'name' => '',
                 'description' => '',
                 'unit' => 'unidad',
@@ -77,26 +81,32 @@ class InventoryController extends Controller
                 'minimum_stock' => '0',
                 'active' => true,
             ],
+            'categories' => InventoryItemCategories::options(),
         ]);
     }
 
-    public function store(StoreInventoryItemRequest $request): RedirectResponse
+    public function store(StoreInventoryItemRequest $request, GenerateInventoryItemCode $generateCode): RedirectResponse
     {
         $validated = $request->validated();
-        $code = Str::upper(trim($validated['code']));
+        $categoryCode = Str::upper(trim($validated['category_code']));
 
-        $item = InventoryItem::create([
-            'code' => $code,
-            'name' => trim($validated['name']),
-            'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
-            'unit' => trim($validated['unit']),
-            'current_stock' => $validated['current_stock'],
-            'minimum_stock' => $validated['minimum_stock'],
-            'qr_value' => $code,
-            'source_sheet' => 'GESTION GENERAL',
-            'source_row' => null,
-            'active' => $request->boolean('active'),
-        ]);
+        $item = DB::transaction(function () use ($validated, $request, $categoryCode, $generateCode): InventoryItem {
+            $code = $generateCode->handle($categoryCode);
+
+            return InventoryItem::create([
+                'code' => $code,
+                'category_code' => $categoryCode,
+                'name' => trim($validated['name']),
+                'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
+                'unit' => trim($validated['unit']),
+                'current_stock' => $validated['current_stock'],
+                'minimum_stock' => $validated['minimum_stock'],
+                'qr_value' => $code,
+                'source_sheet' => 'GESTION GENERAL',
+                'source_row' => null,
+                'active' => $request->boolean('active'),
+            ]);
+        });
 
         return redirect()
             ->route('admin.inventory.show', $item)
@@ -130,6 +140,7 @@ class InventoryController extends Controller
 
         return Inertia::render('inventory/admin/edit', [
             'item' => $this->payload($inventoryItem, false),
+            'categories' => InventoryItemCategories::options(),
         ]);
     }
 
@@ -138,20 +149,96 @@ class InventoryController extends Controller
         $validated = $request->validated();
         $code = Str::upper(trim($validated['code']));
 
-        $inventoryItem->update([
-            'code' => $code,
-            'name' => trim($validated['name']),
-            'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
-            'unit' => trim($validated['unit']),
-            'current_stock' => $validated['current_stock'],
-            'minimum_stock' => $validated['minimum_stock'],
-            'qr_value' => $code,
-            'active' => $request->boolean('active'),
-        ]);
+        $inventoryItem = DB::transaction(function () use ($validated, $request, $inventoryItem, $code): InventoryItem {
+            $inventoryItem = InventoryItem::query()
+                ->whereKey($inventoryItem->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $stockBefore = round((float) $inventoryItem->current_stock, 2);
+            $stockAfter = $this->stockAfterUpdate($stockBefore, $validated);
+            $previousCode = $inventoryItem->code;
+
+            $inventoryItem->update([
+                'code' => $code,
+                'category_code' => filled($validated['category_code'] ?? null) ? Str::upper(trim($validated['category_code'])) : null,
+                'name' => trim($validated['name']),
+                'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
+                'unit' => trim($validated['unit']),
+                'current_stock' => $stockAfter,
+                'minimum_stock' => $validated['minimum_stock'],
+                'qr_value' => $code,
+                'active' => $request->boolean('active'),
+            ]);
+
+            if (abs($stockAfter - $stockBefore) >= 0.01) {
+                InventoryMovement::create([
+                    'inventory_item_id' => $inventoryItem->id,
+                    'user_id' => $request->user()?->id,
+                    'movement_type' => $this->manualMovementType($validated),
+                    'quantity' => abs($stockAfter - $stockBefore),
+                    'stock_before' => $stockBefore,
+                    'stock_after' => $stockAfter,
+                    'description' => $this->manualMovementDescription($validated),
+                    'metadata' => [
+                        'inventory_item_code' => $inventoryItem->code,
+                        'previous_inventory_item_code' => $previousCode,
+                        'adjustment_type' => $validated['stock_adjustment_type'] ?? null,
+                        'source' => 'inventory_admin_edit',
+                    ],
+                ]);
+            }
+
+            return $inventoryItem;
+        });
 
         return redirect()
             ->route('admin.inventory.show', $inventoryItem)
             ->with('success', 'Insumo actualizado.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function stockAfterUpdate(float $stockBefore, array $validated): float
+    {
+        $adjustmentType = $validated['stock_adjustment_type'] ?? null;
+
+        if ($adjustmentType === null || $adjustmentType === '') {
+            return round((float) $validated['current_stock'], 2);
+        }
+
+        $quantity = round((float) $validated['stock_adjustment_quantity'], 2);
+
+        return match ($adjustmentType) {
+            'add' => round($stockBefore + $quantity, 2),
+            'subtract' => round($stockBefore - $quantity, 2),
+            default => round((float) $validated['current_stock'], 2),
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function manualMovementType(array $validated): string
+    {
+        return match ($validated['stock_adjustment_type'] ?? null) {
+            'add' => 'manual_entry',
+            'subtract' => 'manual_exit',
+            default => 'manual_adjustment',
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function manualMovementDescription(array $validated): string
+    {
+        return match ($validated['stock_adjustment_type'] ?? null) {
+            'add' => 'Entrada manual desde gestion de inventario',
+            'subtract' => 'Salida manual desde gestion de inventario',
+            default => 'Ajuste manual desde gestion de inventario',
+        };
     }
 
     /**
@@ -162,6 +249,8 @@ class InventoryController extends Controller
         return [
             'id' => $item->id,
             'code' => $item->code,
+            'category_code' => $item->category_code,
+            'category_label' => InventoryItemCategories::label($item->category_code),
             'name' => $item->name,
             'description' => $item->description,
             'unit' => $item->unit,

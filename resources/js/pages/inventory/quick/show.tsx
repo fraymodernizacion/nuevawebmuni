@@ -184,6 +184,9 @@ export default function InventoryQuickShow({ code, item, permissions }: Props) {
                                 label="Stock actual"
                                 value={item.current_stock.toLocaleString(
                                     'es-AR',
+                                    {
+                                        maximumFractionDigits: 0,
+                                    },
                                 )}
                             />
                             <Metric label="Unidad" value={item.unit} />
@@ -244,12 +247,16 @@ export default function InventoryQuickShow({ code, item, permissions }: Props) {
                                     -
                                 </Button>
                                 <Input
-                                    inputMode="decimal"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     value={form.data.quantity}
                                     onChange={(event) =>
                                         form.setData(
                                             'quantity',
-                                            event.target.value,
+                                            event.target.value.replace(
+                                                /\D/g,
+                                                '',
+                                            ),
                                         )
                                     }
                                     className="h-16 text-center text-3xl font-black"
