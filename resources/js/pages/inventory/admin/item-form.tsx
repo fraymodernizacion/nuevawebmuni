@@ -92,7 +92,7 @@ export function InventoryItemForm({
 
             <Field label="Descripcion" error={form.errors.description}>
                 <textarea
-                    className="min-h-28 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                    className="min-h-28 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                     value={form.data.description}
                     onChange={(event) =>
                         form.setData('description', event.target.value)
@@ -114,10 +114,7 @@ export function InventoryItemForm({
                     />
                 </Field>
 
-                <Field
-                    label="Stock minimo"
-                    error={form.errors.minimum_stock}
-                >
+                <Field label="Stock minimo" error={form.errors.minimum_stock}>
                     <Input
                         type="number"
                         step="0.01"

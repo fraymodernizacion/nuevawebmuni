@@ -53,6 +53,7 @@ class InventoryController extends Controller
         return Inertia::render('inventory/admin/index', [
             'items' => $items,
             'filters' => $request->only(['search', 'stock_state']),
+            'labelBatchUrl' => route('admin.inventory.labels.index'),
             'summary' => $summary,
             'stockStates' => [
                 ['value' => 'all', 'label' => 'Todos'],

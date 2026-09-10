@@ -1,18 +1,19 @@
-import { usePage } from '@inertiajs/react';
-
-import AppLogoIcon from '@/components/app-logo-icon';
-
 export default function AppLogo() {
-    const { name } = usePage().props;
-
     return (
         <>
-            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                <AppLogoIcon className="size-5 fill-current text-white dark:text-black" />
+            <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white p-1 ring-1 ring-sidebar-border group-data-[collapsible=icon]:size-8">
+                <img
+                    src="/assets/optimized/fme-04.png"
+                    alt="Municipalidad de Fray Mamerto Esquiú"
+                    className="max-h-full max-w-full object-contain"
+                />
             </div>
-            <div className="ml-1 grid flex-1 text-left text-sm">
-                <span className="mb-0.5 truncate leading-tight font-semibold">
-                    {name}
+            <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                <span className="truncate text-xs font-medium text-sidebar-foreground/70">
+                    Municipalidad de
+                </span>
+                <span className="truncate text-sm font-bold text-sidebar-foreground">
+                    Fray Mamerto Esquiú
                 </span>
             </div>
         </>

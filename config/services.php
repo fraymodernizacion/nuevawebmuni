@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'builderbot' => [
+        'base_url' => env('BUILDERBOT_BASE_URL', 'https://app.builderbot.cloud'),
+        'bot_id' => env('BUILDERBOT_BOT_ID'),
+        'api_key' => env('BUILDERBOT_API_KEY'),
+        'check_if_exists' => env('BUILDERBOT_CHECK_IF_EXISTS', false),
+    ],
+
 ];

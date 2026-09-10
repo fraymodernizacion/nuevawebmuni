@@ -1,0 +1,180 @@
+import { Head } from '@inertiajs/react';
+import { MunicipalBrand } from '@/components/municipal-brand';
+
+type Props = {
+    complaint: {
+        public_code: string;
+        category: string | null;
+        type: string;
+        created_at: string | null;
+        status: string;
+        updated_at: string | null;
+        description: string | null;
+        other_problem_description: string | null;
+        location: {
+            locality: string | null;
+            zone: string | null;
+            street: string | null;
+            street_number: string | null;
+            neighborhood: string | null;
+            reference: string | null;
+        };
+        timeline: {
+            action: string;
+            date: string | null;
+            status_label: string | null;
+            observation: string | null;
+        }[];
+    };
+};
+
+export default function PublicComplaintStatus({ complaint }: Props) {
+    const address = [
+        complaint.location.street,
+        complaint.location.street_number,
+        complaint.location.neighborhood
+            ? `Barrio ${complaint.location.neighborhood}`
+            : null,
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+    return (
+        <>
+            <Head title={`Reclamo ${complaint.public_code}`} />
+            <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fef3c7,transparent_26rem),linear-gradient(180deg,#f8fafc,#e2e8f0)] px-4 py-8 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+                <section className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+                    <header className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <MunicipalBrand imageClassName="h-14" />
+                        <p className="mt-5 text-sm font-semibold text-amber-600 uppercase">
+                            Seguimiento de reclamo
+                        </p>
+                        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h1 className="text-3xl font-black tracking-tight">
+                                    {complaint.public_code}
+                                </h1>
+                                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                    {complaint.category ?? 'Reclamo municipal'}{' '}
+                                    · {complaint.type}
+                                </p>
+                            </div>
+                            <span className="w-fit rounded-full bg-zinc-950 px-4 py-2 text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">
+                                {complaint.status}
+                            </span>
+                        </div>
+                    </header>
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                        <Info
+                            label="Ingreso"
+                            value={complaint.created_at ?? '-'}
+                        />
+                        <Info
+                            label="Última actualización"
+                            value={complaint.updated_at ?? '-'}
+                        />
+                        <Info
+                            label="Localidad"
+                            value={complaint.location.locality ?? '-'}
+                        />
+                    </div>
+
+                    <section className="grid gap-4 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <h2 className="text-xl font-bold">Detalle informado</h2>
+                        <div className="grid gap-3 text-sm">
+                            <Detail
+                                label="Problema"
+                                value={
+                                    complaint.other_problem_description ??
+                                    complaint.description ??
+                                    complaint.type
+                                }
+                            />
+                            <Detail
+                                label="Dirección"
+                                value={address || 'Sin dirección declarada'}
+                            />
+                            <Detail
+                                label="Referencia de ubicación"
+                                value={
+                                    complaint.location.reference ??
+                                    'Sin referencia adicional'
+                                }
+                            />
+                            <Detail
+                                label="Zona operativa"
+                                value={complaint.location.zone ?? '-'}
+                            />
+                        </div>
+                    </section>
+
+                    <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <h2 className="text-xl font-bold">
+                            Historial y observaciones
+                        </h2>
+                        <ol className="mt-5 flex flex-col gap-4 border-l border-zinc-200 pl-5 dark:border-zinc-800">
+                            {complaint.timeline.map((item, index) => (
+                                <li
+                                    key={`${item.date}-${index}`}
+                                    className="relative text-sm"
+                                >
+                                    <span className="absolute top-1 -left-[27px] size-3 rounded-full bg-amber-500 ring-4 ring-white dark:ring-zinc-900" />
+                                    <div className="flex flex-col gap-1 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/70">
+                                        <span className="text-xs font-semibold text-zinc-500">
+                                            {item.date ?? '-'}
+                                        </span>
+                                        <p className="font-bold">
+                                            {item.status_label ??
+                                                actionLabel(item.action)}
+                                        </p>
+                                        {item.observation ? (
+                                            <p className="leading-6 text-zinc-700 dark:text-zinc-200">
+                                                {item.observation}
+                                            </p>
+                                        ) : (
+                                            <p className="text-zinc-500 dark:text-zinc-400">
+                                                Sin observaciones registradas.
+                                            </p>
+                                        )}
+                                    </div>
+                                </li>
+                            ))}
+                        </ol>
+                    </section>
+                </section>
+            </main>
+        </>
+    );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <p className="text-xs text-zinc-500">{label}</p>
+            <p className="font-semibold">{value}</p>
+        </div>
+    );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/70">
+            <p className="text-xs font-semibold tracking-[0.12em] text-zinc-500 uppercase">
+                {label}
+            </p>
+            <p className="mt-1 leading-6">{value}</p>
+        </div>
+    );
+}
+
+function actionLabel(action: string) {
+    return (
+        {
+            created: 'Reclamo recibido',
+            assigned: 'Reclamo asignado',
+            status_changed: 'Estado actualizado',
+            intervention: 'Intervención registrada',
+        }[action] ?? 'Movimiento registrado'
+    );
+}

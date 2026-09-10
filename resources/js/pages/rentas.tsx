@@ -1,6 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { BookOpenText, CircleDollarSign, Scale, UserRoundPlus } from 'lucide-react';
+import {
+    BookOpenText,
+    CircleDollarSign,
+    Scale,
+    UserRoundPlus,
+} from 'lucide-react';
 
 const lawBase = 'https://fraymunicipalidad.gob.ar/archivos/legislacion';
 
@@ -202,7 +207,12 @@ const taxes: Tax[] = [
     },
     {
         title: 'Verificación',
-        details: [['Servicios públicos y otros servicios', 'día 10 del mes siguiente']],
+        details: [
+            [
+                'Servicios públicos y otros servicios',
+                'día 10 del mes siguiente',
+            ],
+        ],
         note: 'El vencimiento cae el día 10 del mes inmediato siguiente al período fiscal.',
     },
     {
@@ -227,7 +237,10 @@ const taxes: Tax[] = [
     {
         title: 'Antenas',
         details: [
-            ['Construcción y registración', '5 días hábiles posteriores a la habilitación'],
+            [
+                'Construcción y registración',
+                '5 días hábiles posteriores a la habilitación',
+            ],
             ['Verificación - Anticipo 1', '31/03/2026'],
             ['Verificación - Anticipo 2', '30/04/2026'],
             ['Verificación - Anticipo 3', '01/06/2025'],
@@ -238,7 +251,8 @@ const taxes: Tax[] = [
 
 export default function Rentas() {
     useEffect(() => {
-        const menuButton = document.querySelector<HTMLButtonElement>('.menu-toggle');
+        const menuButton =
+            document.querySelector<HTMLButtonElement>('.menu-toggle');
         const nav = document.querySelector<HTMLElement>('.main-nav');
 
         if (!menuButton || !nav) {
@@ -316,49 +330,82 @@ export default function Rentas() {
                         </p>
                     </section>
 
-                    <section className="open-government rentas-access" aria-labelledby="rentas-accesos-title">
+                    <section
+                        className="open-government rentas-access"
+                        aria-labelledby="rentas-accesos-title"
+                    >
                         <div className="section-heading">
                             <p className="kicker">Accesos rápidos</p>
-                            <h2 id="rentas-accesos-title">Consultas, trámites y normativa</h2>
+                            <h2 id="rentas-accesos-title">
+                                Consultas, trámites y normativa
+                            </h2>
                         </div>
 
                         <div className="open-government-grid">
                             <article className="open-government-card">
-                                <div className="document-icon" aria-hidden="true">
+                                <div
+                                    className="document-icon"
+                                    aria-hidden="true"
+                                >
                                     <CircleDollarSign className="h-6 w-6" />
                                 </div>
                                 <div>
                                     <span>Pagos y consultas</span>
                                     <h3>Consultas y pagos</h3>
-                                    <p>Ingresá con nomenclatura, padrón o CUIT para ver y pagar tus tasas.</p>
+                                    <p>
+                                        Ingresá con nomenclatura, padrón o CUIT
+                                        para ver y pagar tus tasas.
+                                    </p>
                                 </div>
-                                <a className="button" href="https://www.municipalidad.com/fray/deuda" target="_blank" rel="noreferrer">
+                                <a
+                                    className="button"
+                                    href="https://www.municipalidad.com/fray/deuda"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
                                     Ir al portal
                                 </a>
                             </article>
 
                             <article className="open-government-card">
-                                <div className="document-icon" aria-hidden="true">
+                                <div
+                                    className="document-icon"
+                                    aria-hidden="true"
+                                >
                                     <UserRoundPlus className="h-6 w-6" />
                                 </div>
                                 <div>
                                     <span>Tasa de Seguridad e Higiene</span>
                                     <h3>Empadronamiento de contribuyentes</h3>
-                                    <p>Acceso a la guía del trámite de alta para contribuyentes.</p>
+                                    <p>
+                                        Acceso a la guía del trámite de alta
+                                        para contribuyentes.
+                                    </p>
                                 </div>
-                                <a className="button" href="https://municipalidad.com/fray/etramites/verguia?idTipoTramiteDet=11" target="_blank" rel="noreferrer">
+                                <a
+                                    className="button"
+                                    href="https://municipalidad.com/fray/etramites/verguia?idTipoTramiteDet=11"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
                                     Iniciar trámite
                                 </a>
                             </article>
 
                             <article className="open-government-card">
-                                <div className="document-icon" aria-hidden="true">
+                                <div
+                                    className="document-icon"
+                                    aria-hidden="true"
+                                >
                                     <BookOpenText className="h-6 w-6" />
                                 </div>
                                 <div>
                                     <span>Marco legal</span>
                                     <h3>Normativa tributaria</h3>
-                                    <p>Ordenanzas y resoluciones vigentes del área de rentas.</p>
+                                    <p>
+                                        Ordenanzas y resoluciones vigentes del
+                                        área de rentas.
+                                    </p>
                                 </div>
                                 <a className="button" href="#normativa">
                                     Ver normativa
@@ -375,7 +422,10 @@ export default function Rentas() {
 
                         <div className="tax-grid">
                             {taxes.map((tax) => (
-                                <article className="tax-card compact-tax" key={tax.title}>
+                                <article
+                                    className="tax-card compact-tax"
+                                    key={tax.title}
+                                >
                                     <div className="tax-card-head">
                                         <span>Tasa</span>
                                         <h3>{tax.title}</h3>
@@ -421,14 +471,20 @@ export default function Rentas() {
                         <div className="legislation-grid">
                             {laws.map((law) => (
                                 <article
-                                    className={`legislation-card${law.featured ? ' featured-law' : ''}`}
+                                    className={`legislation-card${law.featured ? 'featured-law' : ''}`}
                                     key={`${law.kind}-${law.title}`}
                                 >
                                     <span>{law.kind}</span>
                                     <h3>{law.title}</h3>
                                     <p>{law.meta}</p>
-                                    <a href={law.href} target="_blank" rel="noreferrer">
-                                        {law.featured ? 'Descargar PDF' : 'Ver PDF'}
+                                    <a
+                                        href={law.href}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        {law.featured
+                                            ? 'Descargar PDF'
+                                            : 'Ver PDF'}
                                     </a>
                                 </article>
                             ))}

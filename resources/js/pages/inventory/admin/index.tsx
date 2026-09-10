@@ -1,9 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Search, QrCode, TriangleAlert } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { Plus, Printer, Search, QrCode, TriangleAlert } from 'lucide-react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { create as createItem, index as inventoryIndex, show as inventoryShow } from '@/routes/admin/inventory';
+import {
+    create as createItem,
+    index as inventoryIndex,
+    show as inventoryShow,
+} from '@/routes/admin/inventory';
 
 type InventoryItem = {
     id: number;
@@ -28,6 +33,7 @@ type Props = {
         stock_state?: string;
     };
     stockStates: { value: string; label: string }[];
+    labelBatchUrl: string;
     summary: {
         total_items: number;
         active_items: number;
@@ -41,12 +47,11 @@ export default function InventoryIndex({
     items,
     filters,
     stockStates,
+    labelBatchUrl,
     summary,
 }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
-    const [stockState, setStockState] = useState(
-        filters.stock_state ?? 'all',
-    );
+    const [stockState, setStockState] = useState(filters.stock_state ?? 'all');
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -74,18 +79,29 @@ export default function InventoryIndex({
                             alumbrado.
                         </p>
                     </div>
-                    <Button asChild className="self-start">
-                        <Link href={createItem()} prefetch>
-                            <Plus className="size-4" />
-                            Nuevo insumo
-                        </Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        <Button asChild variant="outline" className="self-start">
+                            <Link href={labelBatchUrl} prefetch>
+                                <Printer className="size-4" />
+                                Etiquetas QR
+                            </Link>
+                        </Button>
+                        <Button asChild className="self-start">
+                            <Link href={createItem()} prefetch>
+                                <Plus className="size-4" />
+                                Nuevo insumo
+                            </Link>
+                        </Button>
+                    </div>
                 </header>
 
                 <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                     <Metric label="Insumos" value={summary.total_items} />
                     <Metric label="Activos" value={summary.active_items} />
-                    <Metric label="Bajo stock" value={summary.low_stock_items} />
+                    <Metric
+                        label="Bajo stock"
+                        value={summary.low_stock_items}
+                    />
                     <Metric label="Inactivos" value={summary.inactive_items} />
                     <Metric
                         label="Stock total"
@@ -162,7 +178,8 @@ export default function InventoryIndex({
                                     {item.current_stock.toLocaleString('es-AR')}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    Minimo: {item.minimum_stock.toLocaleString('es-AR')}
+                                    Minimo:{' '}
+                                    {item.minimum_stock.toLocaleString('es-AR')}
                                 </p>
                             </div>
                             <div>
@@ -176,7 +193,9 @@ export default function InventoryIndex({
                             </div>
                             <div className="flex flex-wrap gap-2 md:justify-end">
                                 <Badge
-                                    variant={item.active ? 'default' : 'secondary'}
+                                    variant={
+                                        item.active ? 'default' : 'secondary'
+                                    }
                                 >
                                     {item.active ? 'Activo' : 'Inactivo'}
                                 </Badge>

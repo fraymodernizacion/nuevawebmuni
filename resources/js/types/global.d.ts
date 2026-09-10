@@ -12,6 +12,9 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            features: {
+                routePlanning: boolean;
+            };
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

@@ -13,6 +13,7 @@ const homeMarkup = `
       <a href="#gobierno-abierto">Gobierno Abierto</a>
       <a href="/juzgado-faltas">Juzgado de Faltas</a>
       <a href="#parque-botanico">Parque Botánico</a>
+      <a href="/sepelio-san-jose.html">Sepelio San José</a>
       <a href="/rentas">Rentas</a>
       <a href="/gabinete.html">Gobierno</a>
     </nav>
@@ -49,7 +50,7 @@ const homeMarkup = `
       </div>
     </section>
 
-    <section class="service-banner" aria-labelledby="sepelio-banner-title" hidden>
+    <section class="service-banner" aria-labelledby="sepelio-banner-title">
       <div>
         <h2 id="sepelio-banner-title">Servicio de Sepelio San José</h2>
         <p>Planes familiares, tarifas individuales, requisitos de inscripción y consulta telefónica.</p>

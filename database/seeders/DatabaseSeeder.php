@@ -17,9 +17,14 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        $this->call(ComplaintModuleSeeder::class);
+        $this->call(IntakeModuleSeeder::class);
+
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Superadmin Municipal',
+            'username' => 'superadmin',
+            'email' => 'superadmin@municipio.test',
+            'role' => 'superadmin',
         ]);
     }
 }

@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property string $name
+ * @property string|null $username
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -26,7 +27,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'role', 'primary_crew_id', 'intake_department_id'])]
+#[Fillable(['name', 'username', 'email', 'password', 'role', 'module_permissions', 'active', 'primary_crew_id', 'intake_department_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -50,7 +51,7 @@ class User extends Authenticatable
 
     public function canManageComplaints(): bool
     {
-        return in_array($this->role, ['operator', 'admin'], true);
+        return $this->hasAnyModulePermission(['complaints_management']) || in_array($this->role, ['operator', 'admin'], true);
     }
 
     public function canUseComplaintManagement(): bool
@@ -58,9 +59,14 @@ class User extends Authenticatable
         return $this->canManageComplaints();
     }
 
+    public function canUseComplaintOperations(): bool
+    {
+        return $this->hasAnyModulePermission(['complaint_operations']) || $this->canManageComplaints() || $this->isCrewMember();
+    }
+
     public function canCoordinateCrews(): bool
     {
-        return in_array($this->role, ['admin', 'crew'], true);
+        return $this->hasAnyModulePermission(['route_planning']) || in_array($this->role, ['admin', 'crew'], true);
     }
 
     public function isCrewMember(): bool
@@ -70,12 +76,72 @@ class User extends Authenticatable
 
     public function canUseIntakeDepartmentPanel(): bool
     {
-        return $this->role === 'intake_department' || $this->role === 'admin';
+        return $this->hasAnyModulePermission(['intake_department']) || $this->role === 'intake_department' || $this->role === 'admin';
+    }
+
+    public function canUseIntakeManagement(): bool
+    {
+        return $this->hasAnyModulePermission(['intake_management']) || in_array($this->role, ['operator', 'admin'], true);
+    }
+
+    public function canConfigureIntake(): bool
+    {
+        return $this->hasAnyModulePermission(['intake_configuration']) || $this->role === 'admin';
     }
 
     public function canManageInventory(): bool
     {
-        return $this->role === 'admin';
+        return $this->hasAnyModulePermission(['inventory_management']) || $this->role === 'admin';
+    }
+
+    public function canUseInventoryQuickMovement(): bool
+    {
+        return $this->hasAnyModulePermission(['inventory_movements']) || in_array($this->role, ['admin', 'operator', 'crew', 'warehouse_manager'], true);
+    }
+
+    public function canRecordInventoryExit(): bool
+    {
+        return $this->canUseInventoryQuickMovement();
+    }
+
+    public function canRecordInventoryRecycled(): bool
+    {
+        return $this->canUseInventoryQuickMovement();
+    }
+
+    public function canRecordInventoryEntry(): bool
+    {
+        return $this->hasAnyModulePermission(['inventory_management']) || in_array($this->role, ['admin', 'warehouse_manager'], true);
+    }
+
+    public function canManageUsers(): bool
+    {
+        return $this->hasAnyModulePermission(['user_management']);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
+
+    /**
+     * @param  array<int, string>  $permissions
+     */
+    public function hasAnyModulePermission(array $permissions): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        $userPermissions = $this->module_permissions ?? [];
+
+        foreach ($permissions as $permission) {
+            if (($userPermissions[$permission] ?? false) === true) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -88,6 +154,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'module_permissions' => 'array',
+            'active' => 'boolean',
         ];
     }
 }

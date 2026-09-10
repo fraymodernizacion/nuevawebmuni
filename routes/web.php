@@ -8,9 +8,12 @@ use App\Http\Controllers\Admin\ComplaintStatusController;
 use App\Http\Controllers\Admin\IntakeConfigurationController;
 use App\Http\Controllers\Admin\IntakeRequestController as AdminIntakeRequestController;
 use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\Admin\InventoryLabelController;
 use App\Http\Controllers\Admin\RoutePlanningController;
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\CrewWorkController;
 use App\Http\Controllers\IntakeDepartmentWorkController;
+use App\Http\Controllers\InventoryQrController;
 use App\Http\Controllers\PublicComplaintController;
 use App\Http\Controllers\PublicIntakeRequestController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +27,7 @@ Route::inertia('/rentas', 'rentas')->name('rentas');
 Route::get('/reclamos/recibido/{complaint}', [PublicComplaintController::class, 'received'])->name('complaints.public.received');
 Route::get('/reclamos/consultar', [PublicComplaintController::class, 'trackCreate'])->name('complaints.public.track');
 Route::post('/reclamos/consultar', [PublicComplaintController::class, 'track'])->name('complaints.public.track.submit');
+Route::redirect('/reclamos/alumbrado', '/reclamos/alumbrado-publico');
 Route::get('/reclamos/{category:slug}', [PublicComplaintController::class, 'create'])->name('complaints.public.create');
 Route::post('/reclamos/{category:slug}', [PublicComplaintController::class, 'store'])->name('complaints.public.store');
 
@@ -36,6 +40,16 @@ Route::post('/mesa-de-entrada/solicitudes/{type:slug}', [PublicIntakeRequestCont
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('dashboard', '/admin/reclamos/dashboard')->name('dashboard');
+
+    Route::get('i/{code}', [InventoryQrController::class, 'show'])
+        ->where('code', '[A-Za-z0-9\-]+')
+        ->name('inventory.qr.show');
+    Route::post('i/{code}/movimientos', [InventoryQrController::class, 'store'])
+        ->where('code', '[A-Za-z0-9\-]+')
+        ->name('inventory.qr.movements.store');
+    Route::get('inventario/qr/{code}', [InventoryQrController::class, 'show'])
+        ->where('code', '[A-Za-z0-9\-]+')
+        ->name('inventory.qr.legacy.show');
 
     Route::prefix('admin/reclamos')->name('admin.complaints.')->group(function () {
         Route::get('dashboard', ComplaintDashboardController::class)->name('dashboard');
@@ -51,11 +65,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('admin/inventario')->name('admin.inventory.')->group(function () {
         Route::get('/', [InventoryController::class, 'index'])->name('index');
+        Route::get('etiquetas', [InventoryLabelController::class, 'index'])->name('labels.index');
+        Route::get('etiquetas/imprimir', [InventoryLabelController::class, 'printBatch'])->name('labels.print');
         Route::get('crear', [InventoryController::class, 'create'])->name('create');
         Route::post('/', [InventoryController::class, 'store'])->name('store');
         Route::get('{inventoryItem}', [InventoryController::class, 'show'])->name('show');
         Route::get('{inventoryItem}/editar', [InventoryController::class, 'edit'])->name('edit');
         Route::patch('{inventoryItem}', [InventoryController::class, 'update'])->name('update');
+    });
+
+    Route::prefix('admin/usuarios')->name('admin.users.')->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::post('/', [UserManagementController::class, 'store'])->name('store');
+        Route::patch('{user}', [UserManagementController::class, 'update'])->name('update');
     });
 
     Route::prefix('admin/mesa-de-entrada')->name('admin.intake.')->group(function () {

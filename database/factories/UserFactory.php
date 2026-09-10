@@ -26,9 +26,13 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            'username' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'role' => 'operator',
+            'module_permissions' => [],
+            'active' => true,
             'remember_token' => Str::random(10),
         ];
     }
@@ -47,4 +51,46 @@ class UserFactory extends Factory
      * Indicate that the model has two-factor authentication configured.
      */
     public function withTwoFactor(): static {}
+
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'admin',
+        ]);
+    }
+
+    public function superAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'superadmin',
+        ]);
+    }
+
+    public function operator(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'operator',
+        ]);
+    }
+
+    public function crewMember(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'crew',
+        ]);
+    }
+
+    public function intakeDepartment(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'intake_department',
+        ]);
+    }
+
+    public function warehouseManager(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'warehouse_manager',
+        ]);
+    }
 }

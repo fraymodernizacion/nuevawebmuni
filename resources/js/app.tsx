@@ -16,7 +16,12 @@ createInertiaApp({
                 name === 'home' ||
                 name === 'boletin' ||
                 name === 'juzgado-faltas' ||
-                name === 'rentas':
+                name === 'rentas' ||
+                name.startsWith('complaints/public/'):
+                return null;
+            case name.startsWith('inventory/quick/'):
+                return null;
+            case name.startsWith('inventory/labels/print'):
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

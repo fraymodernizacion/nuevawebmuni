@@ -2,11 +2,15 @@
 
 namespace App\Providers;
 
+use App\Contracts\WhatsAppNotificationService;
+use App\Services\Notifications\BuilderBotWhatsAppNotificationService;
+use App\Services\Notifications\NullWhatsAppNotificationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Inertia;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,7 +19,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            WhatsAppNotificationService::class,
+            fn () => filled(config('services.builderbot.api_key')) && filled(config('services.builderbot.bot_id'))
+                ? app(BuilderBotWhatsAppNotificationService::class)
+                : app(NullWhatsAppNotificationService::class),
+        );
     }
 
     /**
@@ -24,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        Inertia::disableSsr(fn (): bool => ! config('inertia.ssr.enabled'));
     }
 
     /**
@@ -34,10 +45,10 @@ class AppServiceProvider extends ServiceProvider
         Date::use(CarbonImmutable::class);
 
         DB::prohibitDestructiveCommands(
-            app()->isProduction(),
+            config('app.env') === 'production',
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
+        Password::defaults(fn (): ?Password => config('app.env') === 'production'
             ? Password::min(12)
                 ->mixedCase()
                 ->letters()

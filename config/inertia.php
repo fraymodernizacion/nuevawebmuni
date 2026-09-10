@@ -16,10 +16,23 @@ return [
     */
 
     'ssr' => [
-        'enabled' => true,
+        'enabled' => env('INERTIA_SSR_ENABLED', false),
         'url' => 'http://127.0.0.1:13714',
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
+    ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | DevTools
+    |--------------------------------------------------------------------------
+    |
+    | Disable Inertia DevTools explicitly so route registration and request
+    | handling do not spend time capturing source metadata in local runtime.
+    |
+    */
+
+    'devtools' => [
+        'enabled' => env('INERTIA_DEVTOOLS_ENABLED', false),
     ],
 
     /*

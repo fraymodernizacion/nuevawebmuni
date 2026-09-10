@@ -3,10 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import {
-    edit,
-    index,
-} from '@/routes/admin/inventory';
+import { edit, index } from '@/routes/admin/inventory';
 
 type Movement = {
     id: number;
@@ -48,7 +45,7 @@ export default function InventoryShow({ item, recentMovements }: Props) {
             <div className="flex flex-col gap-4 p-4">
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <p className="text-xs font-semibold uppercase text-muted-foreground">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase">
                             {item.code}
                         </p>
                         <h1 className="text-2xl font-semibold tracking-normal">
@@ -84,17 +81,32 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                             <CardTitle>Detalle del insumo</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-3 text-sm">
-                            <Row label="Descripcion" value={item.description ?? 'Sin descripcion'} />
+                            <Row
+                                label="Descripcion"
+                                value={item.description ?? 'Sin descripcion'}
+                            />
                             <Row label="Unidad" value={item.unit} />
-                            <Row label="Activo" value={item.active ? 'Si' : 'No'} />
-                            <Row label="Origen" value={item.source_sheet ?? 'Carga manual'} />
+                            <Row
+                                label="Activo"
+                                value={item.active ? 'Si' : 'No'}
+                            />
+                            <Row
+                                label="Origen"
+                                value={item.source_sheet ?? 'Carga manual'}
+                            />
                             <Row
                                 label="Fila origen"
                                 value={item.source_row?.toString() ?? '-'}
                             />
                             <Row
                                 label="Actualizado"
-                                value={item.updated_at ? new Date(item.updated_at).toLocaleString('es-AR') : '-'}
+                                value={
+                                    item.updated_at
+                                        ? new Date(
+                                              item.updated_at,
+                                          ).toLocaleString('es-AR')
+                                        : '-'
+                                }
                             />
                         </CardContent>
                     </Card>
@@ -105,7 +117,7 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                         </CardHeader>
                         <CardContent className="grid gap-3">
                             <div className="rounded-lg border border-dashed bg-muted/20 p-6 text-center">
-                                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">
                                     Valor QR
                                 </p>
                                 <p className="mt-2 font-mono text-lg font-semibold">
@@ -120,7 +132,9 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                                 variant={item.low_stock ? 'outline' : 'default'}
                                 className="w-fit"
                             >
-                                {item.low_stock ? 'Bajo stock' : 'Stock saludable'}
+                                {item.low_stock
+                                    ? 'Bajo stock'
+                                    : 'Stock saludable'}
                             </Badge>
                         </CardContent>
                     </Card>
@@ -134,30 +148,36 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                         {recentMovements.length > 0 ? (
                             recentMovements.map((movement, index) => (
                                 <div key={movement.id}>
-                                    {index > 0 && <Separator className="my-3" />}
+                                    {index > 0 && (
+                                        <Separator className="my-3" />
+                                    )}
                                     <div className="grid gap-2 text-sm md:grid-cols-[1fr_160px_140px] md:items-start">
                                         <div>
                                             <p className="font-semibold">
-                                                {movement.description ?? movement.movement_type}
+                                                {movement.description ??
+                                                    movement.movement_type}
                                             </p>
                                             <p className="text-muted-foreground">
-                                                {movement.user?.name ?? 'Sistema'}
+                                                {movement.user?.name ??
+                                                    'Sistema'}
                                                 {movement.complaint_intervention &&
                                                     ` · Reclamo ${movement.complaint_intervention.complaint_code}`}
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-xs font-semibold uppercase text-muted-foreground">
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase">
                                                 Cantidad
                                             </p>
                                             <p>{movement.quantity}</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs font-semibold uppercase text-muted-foreground">
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase">
                                                 Fecha
                                             </p>
                                             <p>
-                                                {new Date(movement.created_at).toLocaleString('es-AR')}
+                                                {new Date(
+                                                    movement.created_at,
+                                                ).toLocaleString('es-AR')}
                                             </p>
                                         </div>
                                     </div>
