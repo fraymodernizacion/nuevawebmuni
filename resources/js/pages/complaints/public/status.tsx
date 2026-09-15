@@ -181,9 +181,6 @@ function GpsLocation({
 
     return (
         <div className="flex flex-col gap-2">
-            <span>
-                {location.latitude}, {location.longitude}
-            </span>
             <a
                 href={location.maps_url}
                 target="_blank"
