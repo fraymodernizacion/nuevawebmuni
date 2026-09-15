@@ -25,6 +25,9 @@ Route::inertia('/juzgado-faltas', 'juzgado-faltas')->name('juzgado-faltas');
 Route::inertia('/rentas', 'rentas')->name('rentas');
 
 Route::get('/reclamos/recibido/{complaint}', [PublicComplaintController::class, 'received'])->name('complaints.public.received');
+Route::get('/reclamos/seguimiento/{complaint}', [PublicComplaintController::class, 'publicStatus'])
+    ->middleware('signed')
+    ->name('complaints.public.status');
 Route::get('/reclamos/consultar', [PublicComplaintController::class, 'trackCreate'])->name('complaints.public.track');
 Route::post('/reclamos/consultar', [PublicComplaintController::class, 'track'])->name('complaints.public.track.submit');
 Route::redirect('/reclamos/alumbrado', '/reclamos/alumbrado-publico');

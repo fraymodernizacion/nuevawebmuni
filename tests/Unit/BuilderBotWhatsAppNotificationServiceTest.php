@@ -33,7 +33,9 @@ test('builderbot service sends message with normalized phone', function (string 
             && $request['number'] === $expectedPhone
             && $request['checkIfExists'] === false
             && str_contains($request['messages']['content'], 'Estimado/a vecino/a Ana Gomez')
-            && str_contains($request['messages']['content'], 'fue resuelto');
+            && str_contains($request['messages']['content'], 'fue resuelto')
+            && str_contains($request['messages']['content'], '/reclamos/seguimiento/123')
+            && ! str_contains($request['messages']['content'], '/reclamos/recibido/123');
     });
 })->with([
     'local number' => ['3834 123456', '5493834123456'],
@@ -63,6 +65,29 @@ test('builderbot service sends resolution photo as media url', function () {
         return $request['messages']['mediaUrl'] === 'https://municipio.test/storage/resuelto.jpg'
             && str_contains($request['messages']['content'], 'ALU-2026-000123')
             && str_contains($request['messages']['content'], 'fue resuelto');
+    });
+});
+
+test('builderbot service sends intervention photo as media url and text link', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'app.builderbot.cloud/api/v2/bot-id/messages' => Http::response(['messageId' => 'message-4']),
+    ]);
+
+    builderBotConfig();
+
+    $result = app(BuilderBotWhatsAppNotificationService::class)
+        ->sendComplaintMessage(complaintForWhatsApp(), ComplaintStatus::InProgress->value, [
+            'intervention_photo_url' => 'https://municipio.test/storage/intervencion.jpg',
+        ]);
+
+    expect($result['status'])->toBe('sent')
+        ->and($result['external_id'])->toBe('message-4');
+
+    Http::assertSent(function (Request $request): bool {
+        return $request['messages']['mediaUrl'] === 'https://municipio.test/storage/intervencion.jpg'
+            && str_contains($request['messages']['content'], 'Foto de la intervencion: https://municipio.test/storage/intervencion.jpg')
+            && str_contains($request['messages']['content'], '/reclamos/seguimiento/123');
     });
 });
 

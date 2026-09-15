@@ -54,6 +54,21 @@ class PublicComplaintController extends Controller
         ]);
     }
 
+    public function publicStatus(Complaint $complaint): Response
+    {
+        $complaint->load([
+            'category:id,name',
+            'locality:id,name',
+            'operationalZone:id,code,name,color',
+            'type:id,name',
+            'publicTimeline',
+        ]);
+
+        return Inertia::render('complaints/public/status', [
+            'complaint' => $this->statusPayload($complaint),
+        ]);
+    }
+
     public function trackCreate(): Response
     {
         return Inertia::render('complaints/public/track', [
@@ -99,31 +114,39 @@ class PublicComplaintController extends Controller
         }
 
         return Inertia::render('complaints/public/status', [
-            'complaint' => [
-                'public_code' => $complaint->public_code,
-                'category' => $complaint->category?->name,
-                'type' => $complaint->type->name,
-                'created_at' => $complaint->created_at?->format('d/m/Y H:i'),
-                'status' => $complaint->current_status->label(),
-                'updated_at' => $complaint->updated_at?->format('d/m/Y H:i'),
-                'description' => $complaint->description,
-                'other_problem_description' => $complaint->other_problem_description,
-                'location' => [
-                    'locality' => $complaint->locality?->name,
-                    'zone' => $complaint->operationalZone?->name,
-                    'street' => $complaint->street,
-                    'street_number' => $complaint->street_number,
-                    'neighborhood' => $complaint->neighborhood,
-                    'reference' => $complaint->location_reference,
-                ],
-                'timeline' => $complaint->publicTimeline->map(fn ($history): array => [
-                    'action' => $history->action,
-                    'status' => $history->to_status?->value,
-                    'status_label' => $history->to_status?->label(),
-                    'observation' => $history->observation,
-                    'date' => $history->changed_at?->format('d/m/Y H:i'),
-                ])->values(),
-            ],
+            'complaint' => $this->statusPayload($complaint),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function statusPayload(Complaint $complaint): array
+    {
+        return [
+            'public_code' => $complaint->public_code,
+            'category' => $complaint->category?->name,
+            'type' => $complaint->type->name,
+            'created_at' => $complaint->created_at?->format('d/m/Y H:i'),
+            'status' => $complaint->current_status->label(),
+            'updated_at' => $complaint->updated_at?->format('d/m/Y H:i'),
+            'description' => $complaint->description,
+            'other_problem_description' => $complaint->other_problem_description,
+            'location' => [
+                'locality' => $complaint->locality?->name,
+                'zone' => $complaint->operationalZone?->name,
+                'street' => $complaint->street,
+                'street_number' => $complaint->street_number,
+                'neighborhood' => $complaint->neighborhood,
+                'reference' => $complaint->location_reference,
+            ],
+            'timeline' => $complaint->publicTimeline->map(fn ($history): array => [
+                'action' => $history->action,
+                'status' => $history->to_status?->value,
+                'status_label' => $history->to_status?->label(),
+                'observation' => $history->observation,
+                'date' => $history->changed_at?->format('d/m/Y H:i'),
+            ])->values(),
+        ];
     }
 }

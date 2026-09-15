@@ -141,13 +141,14 @@ class ComplaintInterventionController extends Controller
             ]);
 
             if ($validated['send_whatsapp'] ?? false) {
-                $resolutionPhoto = $storedPhotos
+                $notificationPhoto = $storedPhotos
                     ->first(fn ($photo): bool => $photo->type === ComplaintPhotoType::Resolution);
+                $notificationPhoto ??= $storedPhotos->first();
 
                 SendWhatsAppComplaintNotification::dispatch($complaint->id, $status->value, [
                     'observation' => $validated['citizen_message'] ?? null,
                     'changed_by' => $request->user()->name,
-                    'resolution_photo_url' => $resolutionPhoto ? URL::to($resolutionPhoto->url()) : null,
+                    'intervention_photo_url' => $notificationPhoto ? URL::to($notificationPhoto->url()) : null,
                 ])->afterCommit();
             }
         });

@@ -11,6 +11,7 @@ use App\Models\OperationalZone;
 use App\Models\User;
 use App\Models\WorkRoute;
 use Database\Seeders\ComplaintModuleSeeder;
+use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
@@ -111,6 +112,28 @@ test('public tracking accepts modular code parts with dni', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('complaints/public/status')
             ->where('complaint.public_code', $complaint->public_code),
+        );
+});
+
+test('signed public status link opens complaint detail', function () {
+    $zone = OperationalZone::where('code', 'A')->firstOrFail();
+    $locality = Locality::whereBelongsTo($zone, 'operationalZone')->firstOrFail();
+    $category = ComplaintCategory::where('code', 'alumbrado_publico')->firstOrFail();
+    $type = ComplaintType::where('complaint_category_id', $category->id)->firstOrFail();
+    $complaint = Complaint::factory()->create([
+        'complaint_category_id' => $category->id,
+        'complaint_type_id' => $type->id,
+        'locality_id' => $locality->id,
+        'operational_zone_id' => $zone->id,
+        'description' => 'La luminaria no prende.',
+    ]);
+
+    $this->get(URL::signedRoute('complaints.public.status', $complaint))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('complaints/public/status')
+            ->where('complaint.public_code', $complaint->public_code)
+            ->where('complaint.description', 'La luminaria no prende.'),
         );
 });
 
