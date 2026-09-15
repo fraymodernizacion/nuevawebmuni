@@ -1,4 +1,6 @@
 import { Head } from '@inertiajs/react';
+import type { ReactNode } from 'react';
+
 import { MunicipalBrand } from '@/components/municipal-brand';
 
 type Props = {
@@ -18,6 +20,9 @@ type Props = {
             street_number: string | null;
             neighborhood: string | null;
             reference: string | null;
+            latitude: string | null;
+            longitude: string | null;
+            maps_url: string | null;
         };
         photos: ComplaintPhoto[];
         timeline: {
@@ -25,6 +30,7 @@ type Props = {
             date: string | null;
             status_label: string | null;
             observation: string | null;
+            photos: ComplaintPhoto[];
         }[];
     };
 };
@@ -39,22 +45,6 @@ type ComplaintPhoto = {
 };
 
 export default function PublicComplaintStatus({ complaint }: Props) {
-    const address = [
-        complaint.location.street,
-        complaint.location.street_number,
-        complaint.location.neighborhood
-            ? `Barrio ${complaint.location.neighborhood}`
-            : null,
-    ]
-        .filter(Boolean)
-        .join(' ');
-    const neighborPhotos = complaint.photos.filter(
-        (photo) => photo.type === 'initial',
-    );
-    const crewPhotos = complaint.photos.filter(
-        (photo) => photo.type !== 'initial',
-    );
-
     return (
         <>
             <Head title={`Reclamo ${complaint.public_code}`} />
@@ -108,19 +98,12 @@ export default function PublicComplaintStatus({ complaint }: Props) {
                                 }
                             />
                             <Detail
-                                label="Dirección"
-                                value={address || 'Sin dirección declarada'}
-                            />
-                            <Detail
-                                label="Referencia de ubicación"
+                                label="Ubicación GPS"
                                 value={
-                                    complaint.location.reference ??
-                                    'Sin referencia adicional'
+                                    <GpsLocation
+                                        location={complaint.location}
+                                    />
                                 }
-                            />
-                            <Detail
-                                label="Zona operativa"
-                                value={complaint.location.zone ?? '-'}
                             />
                         </div>
                     </section>
@@ -131,22 +114,15 @@ export default function PublicComplaintStatus({ complaint }: Props) {
                                 Fotos del reclamo
                             </h2>
                             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                Imágenes cargadas por el vecino y por el equipo
-                                de cuadrilla durante las intervenciones.
+                                Imagen cargada al iniciar el reclamo.
                             </p>
                         </div>
 
                         <PhotoGroup
                             className="mt-5"
-                            title="Vecino"
+                            title="Foto cargada por el vecino"
                             emptyText="El vecino no cargó foto inicial."
-                            photos={neighborPhotos}
-                        />
-                        <PhotoGroup
-                            className="mt-5"
-                            title="Intervenciones de cuadrilla"
-                            emptyText="Todavía no hay fotos de intervenciones."
-                            photos={crewPhotos}
+                            photos={complaint.photos}
                         />
                     </section>
 
@@ -178,6 +154,11 @@ export default function PublicComplaintStatus({ complaint }: Props) {
                                                 Sin observaciones registradas.
                                             </p>
                                         )}
+                                        {item.photos.length > 0 && (
+                                            <TimelinePhotos
+                                                photos={item.photos}
+                                            />
+                                        )}
                                     </div>
                                 </li>
                             ))}
@@ -186,6 +167,37 @@ export default function PublicComplaintStatus({ complaint }: Props) {
                 </section>
             </main>
         </>
+    );
+}
+
+function GpsLocation({
+    location,
+}: {
+    location: Props['complaint']['location'];
+}) {
+    if (!location.maps_url || !location.latitude || !location.longitude) {
+        return <span>Sin ubicación GPS registrada</span>;
+    }
+
+    return (
+        <div className="flex flex-col gap-2">
+            <span>
+                {location.latitude}, {location.longitude}
+            </span>
+            <a
+                href={location.maps_url}
+                target="_blank"
+                rel="noreferrer"
+                className="w-fit rounded-full bg-amber-500 px-4 py-2 text-sm font-bold text-zinc-950 transition hover:bg-amber-400"
+            >
+                Ver ubicación en Google Maps
+            </a>
+            {location.reference ? (
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                    {location.reference}
+                </span>
+            ) : null}
+        </div>
     );
 }
 
@@ -242,6 +254,38 @@ function PhotoGroup({
     );
 }
 
+function TimelinePhotos({ photos }: { photos: ComplaintPhoto[] }) {
+    return (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {photos.map((photo) => (
+                <a
+                    key={photo.id}
+                    href={photo.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white transition hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900"
+                >
+                    <img
+                        src={photo.url}
+                        alt={photo.original_name ?? photo.type_label}
+                        className="aspect-[4/3] w-full bg-zinc-100 object-cover transition group-hover:scale-[1.02] dark:bg-zinc-950"
+                    />
+                    <div className="flex flex-col gap-1 p-3">
+                        <span className="font-semibold">
+                            {photo.type_label}
+                        </span>
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {photo.taken_at ??
+                                photo.original_name ??
+                                'Sin fecha registrada'}
+                        </span>
+                    </div>
+                </a>
+            ))}
+        </div>
+    );
+}
+
 function Info({ label, value }: { label: string; value: string }) {
     return (
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -251,7 +295,7 @@ function Info({ label, value }: { label: string; value: string }) {
     );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value }: { label: string; value: ReactNode }) {
     return (
         <div className="rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/70">
             <p className="text-xs font-semibold tracking-[0.12em] text-zinc-500 uppercase">

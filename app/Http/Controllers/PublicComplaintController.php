@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ComplaintPhotoType;
 use App\Http\Requests\StorePublicComplaintRequest;
 use App\Http\Requests\TrackComplaintRequest;
 use App\Models\Complaint;
@@ -126,6 +127,30 @@ class PublicComplaintController extends Controller
      */
     private function statusPayload(Complaint $complaint): array
     {
+        $neighborPhotos = $complaint->photos
+            ->where('type', ComplaintPhotoType::Initial)
+            ->values();
+        $crewPhotoTimeline = $complaint->photos
+            ->where('type', '!=', ComplaintPhotoType::Initial)
+            ->map(fn (ComplaintPhoto $photo): array => [
+                'action' => 'photo',
+                'status' => null,
+                'status_label' => $photo->type->label(),
+                'observation' => null,
+                'date' => ($photo->taken_at ?? $photo->created_at)?->format('d/m/Y H:i'),
+                'sort_date' => ($photo->taken_at ?? $photo->created_at)?->timestamp ?? 0,
+                'photos' => [$this->photoPayload($photo)],
+            ]);
+        $historyTimeline = $complaint->publicTimeline->map(fn ($history): array => [
+            'action' => $history->action,
+            'status' => $history->to_status?->value,
+            'status_label' => $history->to_status?->label(),
+            'observation' => $history->observation,
+            'date' => $history->changed_at?->format('d/m/Y H:i'),
+            'sort_date' => $history->changed_at?->timestamp ?? 0,
+            'photos' => [],
+        ]);
+
         return [
             'public_code' => $complaint->public_code,
             'category' => $complaint->category?->name,
@@ -142,22 +167,37 @@ class PublicComplaintController extends Controller
                 'street_number' => $complaint->street_number,
                 'neighborhood' => $complaint->neighborhood,
                 'reference' => $complaint->location_reference,
+                'latitude' => $complaint->latitude,
+                'longitude' => $complaint->longitude,
+                'maps_url' => $complaint->latitude !== null && $complaint->longitude !== null
+                    ? 'https://www.google.com/maps/search/?api=1&query='.$complaint->latitude.','.$complaint->longitude
+                    : null,
             ],
-            'photos' => $complaint->photos->map(fn (ComplaintPhoto $photo): array => [
-                'id' => $photo->id,
-                'type' => $photo->type->value,
-                'type_label' => $photo->type->label(),
-                'url' => $photo->url(),
-                'original_name' => $photo->original_name,
-                'taken_at' => $photo->taken_at?->format('d/m/Y H:i'),
-            ])->values(),
-            'timeline' => $complaint->publicTimeline->map(fn ($history): array => [
-                'action' => $history->action,
-                'status' => $history->to_status?->value,
-                'status_label' => $history->to_status?->label(),
-                'observation' => $history->observation,
-                'date' => $history->changed_at?->format('d/m/Y H:i'),
-            ])->values(),
+            'photos' => $neighborPhotos->map(fn (ComplaintPhoto $photo): array => $this->photoPayload($photo)),
+            'timeline' => $historyTimeline
+                ->concat($crewPhotoTimeline)
+                ->sortByDesc('sort_date')
+                ->map(function (array $item): array {
+                    unset($item['sort_date']);
+
+                    return $item;
+                })
+                ->values(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function photoPayload(ComplaintPhoto $photo): array
+    {
+        return [
+            'id' => $photo->id,
+            'type' => $photo->type->value,
+            'type_label' => $photo->type->label(),
+            'url' => $photo->url(),
+            'original_name' => $photo->original_name,
+            'taken_at' => $photo->taken_at?->format('d/m/Y H:i'),
         ];
     }
 }

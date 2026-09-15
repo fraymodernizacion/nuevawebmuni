@@ -156,6 +156,8 @@ test('public tracking shows complaint details and public observations', function
         'street_number' => '123',
         'neighborhood' => 'Centro',
         'location_reference' => 'Frente a la plaza principal',
+        'latitude' => -28.3875664,
+        'longitude' => -65.7009248,
         'description' => 'La luminaria parpadea durante la noche.',
         'current_status' => ComplaintStatus::InProgress,
     ]);
@@ -185,7 +187,7 @@ test('public tracking shows complaint details and public observations', function
         'original_name' => 'intervencion.jpg',
         'mime_type' => 'image/jpeg',
         'size' => 54321,
-        'created_at' => now(),
+        'taken_at' => now()->addMinute(),
     ]);
 
     $this->post(route('complaints.public.track.submit'), [
@@ -199,12 +201,14 @@ test('public tracking shows complaint details and public observations', function
             ->where('complaint.description', 'La luminaria parpadea durante la noche.')
             ->where('complaint.location.locality', $locality->name)
             ->where('complaint.location.reference', 'Frente a la plaza principal')
-            ->has('complaint.photos', 2)
+            ->where('complaint.location.maps_url', 'https://www.google.com/maps/search/?api=1&query=-28.3875664,-65.7009248')
+            ->has('complaint.photos', 1)
             ->where('complaint.photos.0.type', ComplaintPhotoType::Initial->value)
             ->where('complaint.photos.0.url', Storage::disk('public')->url('complaints/'.$complaint->id.'/vecino.jpg'))
-            ->where('complaint.photos.1.type', ComplaintPhotoType::Intervention->value)
-            ->where('complaint.photos.1.url', Storage::disk('public')->url('complaints/'.$complaint->id.'/intervencion.jpg'))
-            ->where('complaint.timeline.0.observation', 'La cuadrilla reviso el tablero y volvera con repuesto.'),
+            ->where('complaint.timeline.0.action', 'photo')
+            ->where('complaint.timeline.0.photos.0.type', ComplaintPhotoType::Intervention->value)
+            ->where('complaint.timeline.0.photos.0.url', Storage::disk('public')->url('complaints/'.$complaint->id.'/intervencion.jpg'))
+            ->where('complaint.timeline.1.observation', 'La cuadrilla reviso el tablero y volvera con repuesto.'),
         );
 });
 
