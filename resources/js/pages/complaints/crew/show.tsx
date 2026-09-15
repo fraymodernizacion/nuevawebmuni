@@ -12,13 +12,13 @@ import {
     RotateCcw,
     Search,
     Upload,
+    X,
 } from 'lucide-react';
-import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { store as intervene } from '@/actions/App/Http/Controllers/Admin/ComplaintInterventionController';
-import {
-    ComplaintMaterialsPicker,
-    type ComplaintMaterialInput,
-} from '@/components/complaints/complaint-materials-picker';
+import { ComplaintMaterialsPicker } from '@/components/complaints/complaint-materials-picker';
+import type { ComplaintMaterialInput } from '@/components/complaints/complaint-materials-picker';
 import { StaticLocationMap } from '@/components/complaints/static-location-map';
 import { WhatsappNotificationToggle } from '@/components/complaints/whatsapp-notification-toggle';
 import {
@@ -81,6 +81,8 @@ export default function CrewComplaintShow({
         (photo: any) => photo.type === 'initial',
     );
     const formStorageKey = `crew-intervention-${complaint.id}`;
+    const galleryInputRef = useRef<HTMLInputElement | null>(null);
+    const cameraInputRef = useRef<HTMLInputElement | null>(null);
     const form = useForm({
         status: 'in_progress',
         response_code: '',
@@ -97,6 +99,10 @@ export default function CrewComplaintShow({
     const [activeDictationField, setActiveDictationField] =
         useState<DictationField | null>(null);
     const [dictationError, setDictationError] = useState('');
+    const photoPreviewUrls = useMemo(
+        () => form.data.photos.map((photo) => URL.createObjectURL(photo)),
+        [form.data.photos],
+    );
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
     useEffect(() => {
@@ -138,12 +144,45 @@ export default function CrewComplaintShow({
         );
     }, [form.data, formStorageKey]);
 
+    useEffect(() => {
+        return () => {
+            photoPreviewUrls.forEach((objectUrl) =>
+                URL.revokeObjectURL(objectUrl),
+            );
+        };
+    }, [photoPreviewUrls]);
+
     function submit(event: FormEvent) {
         event.preventDefault();
         form.post(intervene.url(complaint.id), {
             forceFormData: true,
             onSuccess: () => window.localStorage.removeItem(formStorageKey),
         });
+    }
+
+    function replacePhotos(files: File[]) {
+        form.setData('photos', files);
+    }
+
+    function appendPhotos(files: File[]) {
+        form.setData('photos', [...form.data.photos, ...files]);
+    }
+
+    function removePhoto(indexToRemove: number) {
+        form.setData(
+            'photos',
+            form.data.photos.filter((_, index) => index !== indexToRemove),
+        );
+    }
+
+    function clearPhotoInputs() {
+        if (galleryInputRef.current) {
+            galleryInputRef.current.value = '';
+        }
+
+        if (cameraInputRef.current) {
+            cameraInputRef.current.value = '';
+        }
     }
 
     return (
@@ -481,48 +520,105 @@ export default function CrewComplaintShow({
                                         <Upload className="size-5" />
                                         <span>Elegir de galeria</span>
                                         <input
+                                            ref={galleryInputRef}
                                             className="hidden"
                                             type="file"
                                             multiple
                                             accept="image/*"
-                                            onChange={(event) =>
-                                                form.setData(
-                                                    'photos',
+                                            onChange={(event) => {
+                                                replacePhotos(
                                                     Array.from(
                                                         event.target.files ??
                                                             [],
                                                     ),
-                                                )
-                                            }
+                                                );
+                                                clearPhotoInputs();
+                                            }}
                                         />
                                     </label>
                                     <label className="order-2 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed bg-background text-sm font-medium hover:bg-muted/60 sm:order-1">
                                         <Camera className="size-5" />
                                         <span>Tomar foto</span>
                                         <input
+                                            ref={cameraInputRef}
                                             className="hidden"
                                             type="file"
                                             accept="image/*"
                                             capture="environment"
-                                            onChange={(event) =>
-                                                form.setData('photos', [
-                                                    ...form.data.photos,
-                                                    ...Array.from(
+                                            onChange={(event) => {
+                                                appendPhotos(
+                                                    Array.from(
                                                         event.target.files ??
                                                             [],
                                                     ),
-                                                ])
-                                            }
+                                                );
+                                                clearPhotoInputs();
+                                            }}
                                         />
                                     </label>
                                 </div>
                                 {form.data.photos.length > 0 && (
-                                    <p className="text-xs text-muted-foreground">
-                                        {form.data.photos.length}{' '}
-                                        {form.data.photos.length === 1
-                                            ? 'foto seleccionada'
-                                            : 'fotos seleccionadas'}
-                                    </p>
+                                    <div className="grid gap-3">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <p className="text-xs text-muted-foreground">
+                                                {form.data.photos.length}{' '}
+                                                {form.data.photos.length === 1
+                                                    ? 'foto seleccionada'
+                                                    : 'fotos seleccionadas'}
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    replacePhotos([])
+                                                }
+                                                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border px-3 text-xs font-semibold"
+                                            >
+                                                <X className="size-3.5" />
+                                                Quitar todas
+                                            </button>
+                                        </div>
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                            {form.data.photos.map(
+                                                (photo, index) => (
+                                                    <article
+                                                        key={`${photo.name}-${photo.lastModified}-${index}`}
+                                                        className="overflow-hidden rounded-md border bg-background"
+                                                    >
+                                                        {photoPreviewUrls[
+                                                            index
+                                                        ] && (
+                                                            <img
+                                                                src={
+                                                                    photoPreviewUrls[
+                                                                        index
+                                                                    ]
+                                                                }
+                                                                alt={`Foto seleccionada ${index + 1}`}
+                                                                className="aspect-video w-full object-cover"
+                                                            />
+                                                        )}
+                                                        <div className="grid gap-2 p-3">
+                                                            <p className="truncate text-sm font-semibold">
+                                                                {photo.name}
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    removePhoto(
+                                                                        index,
+                                                                    )
+                                                                }
+                                                                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold"
+                                                            >
+                                                                <X className="size-4" />
+                                                                Quitar foto
+                                                            </button>
+                                                        </div>
+                                                    </article>
+                                                ),
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
                             </FieldBlock>
 

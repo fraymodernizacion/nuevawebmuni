@@ -11,9 +11,10 @@ import {
     Send,
     TriangleAlert,
     Upload,
+    X,
     Zap,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { store } from '@/actions/App/Http/Controllers/PublicComplaintController';
 import { InteractiveLocationMap } from '@/components/complaints/interactive-location-map';
@@ -43,6 +44,8 @@ export default function CreatePublicLightingComplaint({
     types,
 }: Props) {
     const [geoMessage, setGeoMessage] = useState('');
+    const galleryInputRef = useRef<HTMLInputElement | null>(null);
+    const cameraInputRef = useRef<HTMLInputElement | null>(null);
     const { data, setData, post, processing, errors, progress } = useForm({
         full_name: '',
         dni: '',
@@ -72,10 +75,42 @@ export default function CreatePublicLightingComplaint({
             ),
         [citizenProblemOptions, data.complaint_type_id],
     );
+    const photoPreviewUrl = useMemo(
+        () => (data.photo ? URL.createObjectURL(data.photo) : null),
+        [data.photo],
+    );
+
+    useEffect(() => {
+        return () => {
+            if (photoPreviewUrl) {
+                URL.revokeObjectURL(photoPreviewUrl);
+            }
+        };
+    }, [photoPreviewUrl]);
 
     function submit(event: FormEvent) {
         event.preventDefault();
         post(store.url(category.slug), { forceFormData: true });
+    }
+
+    function selectPhoto(file: File | null) {
+        setData('photo', file);
+        resetPhotoInputs();
+    }
+
+    function clearPhoto() {
+        setData('photo', null);
+        resetPhotoInputs();
+    }
+
+    function resetPhotoInputs() {
+        if (galleryInputRef.current) {
+            galleryInputRef.current.value = '';
+        }
+
+        if (cameraInputRef.current) {
+            cameraInputRef.current.value = '';
+        }
     }
 
     function useMyLocation() {
@@ -358,12 +393,12 @@ export default function CreatePublicLightingComplaint({
                                         <Upload className="size-5" />
                                         <span>Elegir de galería</span>
                                         <input
+                                            ref={galleryInputRef}
                                             className="hidden"
                                             type="file"
                                             accept="image/*"
                                             onChange={(event) =>
-                                                setData(
-                                                    'photo',
+                                                selectPhoto(
                                                     event.target.files?.[0] ??
                                                         null,
                                                 )
@@ -374,13 +409,13 @@ export default function CreatePublicLightingComplaint({
                                         <Camera className="size-5" />
                                         <span>Tomar con cámara</span>
                                         <input
+                                            ref={cameraInputRef}
                                             className="hidden"
                                             type="file"
                                             accept="image/*"
                                             capture="environment"
                                             onChange={(event) =>
-                                                setData(
-                                                    'photo',
+                                                selectPhoto(
                                                     event.target.files?.[0] ??
                                                         null,
                                                 )
@@ -388,10 +423,45 @@ export default function CreatePublicLightingComplaint({
                                         />
                                     </label>
                                 </div>
-                                {data.photo && (
-                                    <p className="mt-2 text-xs text-zinc-500">
-                                        Foto seleccionada: {data.photo.name}
-                                    </p>
+                                {data.photo && photoPreviewUrl && (
+                                    <div className="mt-3 overflow-hidden rounded-md border border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30">
+                                        <img
+                                            src={photoPreviewUrl}
+                                            alt="Foto seleccionada para el reclamo"
+                                            className="aspect-video w-full object-cover"
+                                        />
+                                        <div className="grid gap-3 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                                                    {data.photo.name}
+                                                </p>
+                                                <p className="text-xs text-emerald-800 dark:text-emerald-100/80">
+                                                    Esta foto se adjuntara al
+                                                    reclamo.
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={clearPhoto}
+                                                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-900 dark:border-emerald-800 dark:bg-zinc-950 dark:text-emerald-100"
+                                                >
+                                                    <X className="size-4" />
+                                                    Quitar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        galleryInputRef.current?.click()
+                                                    }
+                                                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-3 text-sm font-semibold text-white"
+                                                >
+                                                    <Upload className="size-4" />
+                                                    Reemplazar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                             </Field>
                         </section>
