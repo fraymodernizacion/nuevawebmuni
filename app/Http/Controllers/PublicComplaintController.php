@@ -56,12 +56,25 @@ class PublicComplaintController extends Controller
 
     public function trackCreate(): Response
     {
-        return Inertia::render('complaints/public/track');
+        return Inertia::render('complaints/public/track', [
+            'complaintCategories' => ComplaintCategory::where('active', true)
+                ->orderBy('name')
+                ->get(['code', 'name'])
+                ->map(fn (ComplaintCategory $category): array => [
+                    'prefix' => str($category->code)->substr(0, 3)->upper()->toString(),
+                    'name' => $category->name,
+                ])
+                ->values(),
+            'currentYear' => now()->year,
+        ]);
     }
 
     public function track(TrackComplaintRequest $request): Response|RedirectResponse
     {
         $validated = $request->validated();
+        $trackingNumber = preg_replace('/\D+/', '', $validated['public_code']) ?? '';
+        $paddedTrackingNumber = $trackingNumber === '' ? null : str_pad($trackingNumber, 6, '0', STR_PAD_LEFT);
+
         $complaint = Complaint::with([
             'category:id,name',
             'locality:id,name',
@@ -69,13 +82,19 @@ class PublicComplaintController extends Controller
             'type:id,name',
             'publicTimeline',
         ])
-            ->where('public_code', $validated['public_code'])
-            ->where('phone', $validated['phone'])
+            ->where('dni', $validated['dni'])
+            ->where(function ($query) use ($paddedTrackingNumber, $validated): void {
+                $query->where('public_code', $validated['public_code']);
+
+                if ($paddedTrackingNumber !== null) {
+                    $query->orWhere('public_code', 'like', "%-{$paddedTrackingNumber}");
+                }
+            })
             ->first();
 
         if (! $complaint) {
             return back()->withErrors([
-                'public_code' => 'No encontramos un reclamo con ese numero y telefono.',
+                'public_code' => 'No encontramos un reclamo con ese numero y DNI.',
             ]);
         }
 

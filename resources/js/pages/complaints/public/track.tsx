@@ -4,10 +4,32 @@ import { FormEvent } from 'react';
 import { track as submitTrack } from '@/actions/App/Http/Controllers/PublicComplaintController';
 import { MunicipalBrand } from '@/components/municipal-brand';
 
-export default function TrackComplaint() {
+type ComplaintCategoryOption = {
+    prefix: string;
+    name: string;
+};
+
+type TrackComplaintProps = {
+    complaintCategories: ComplaintCategoryOption[];
+    currentYear: number;
+};
+
+export default function TrackComplaint({
+    complaintCategories,
+    currentYear,
+}: TrackComplaintProps) {
+    const defaultCategory = complaintCategories[0] ?? {
+        prefix: 'ALU',
+        name: 'Alumbrado publico',
+    };
+    const categoryOptions =
+        complaintCategories.length > 0 ? complaintCategories : [defaultCategory];
     const { data, setData, post, processing, errors } = useForm({
         public_code: '',
-        phone: '',
+        public_code_prefix: defaultCategory.prefix,
+        public_code_year: currentYear.toString(),
+        public_code_number: '',
+        dni: '',
     });
 
     function submit(event: FormEvent) {
@@ -27,41 +49,104 @@ export default function TrackComplaint() {
                     <h1 className="text-2xl font-semibold tracking-normal">
                         Consultar reclamo
                     </h1>
-                    <label className="flex flex-col gap-1.5 text-sm font-medium">
-                        Número de reclamo
-                        <input
-                            className="input"
-                            value={data.public_code}
-                            onChange={(event) =>
-                                setData('public_code', event.target.value)
-                            }
-                            placeholder="ALU-2026-000001"
-                        />
+                    <div className="grid gap-3 sm:grid-cols-[1.2fr_0.8fr_1fr]">
+                        <label className="flex flex-col gap-1.5 text-sm font-medium">
+                            Tipo
+                            <select
+                                className="input"
+                                value={data.public_code_prefix}
+                                onChange={(event) =>
+                                    setData(
+                                        'public_code_prefix',
+                                        event.target.value,
+                                    )
+                                }
+                            >
+                                {categoryOptions.map((category) => (
+                                    <option
+                                        key={`${category.prefix}-${category.name}`}
+                                        value={category.prefix}
+                                    >
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.public_code_prefix && (
+                                <span className="text-xs text-red-600">
+                                    {errors.public_code_prefix}
+                                </span>
+                            )}
+                        </label>
+                        <label className="flex flex-col gap-1.5 text-sm font-medium">
+                            Año
+                            <input
+                                className="input"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={4}
+                                value={data.public_code_year}
+                                onChange={(event) =>
+                                    setData(
+                                        'public_code_year',
+                                        event.target.value.replace(/\D+/g, ''),
+                                    )
+                                }
+                            />
+                            {errors.public_code_year && (
+                                <span className="text-xs text-red-600">
+                                    {errors.public_code_year}
+                                </span>
+                            )}
+                        </label>
+                        <label className="flex flex-col gap-1.5 text-sm font-medium">
+                            Número
+                            <input
+                                className="input"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={6}
+                                value={data.public_code_number}
+                                onChange={(event) =>
+                                    setData(
+                                        'public_code_number',
+                                        event.target.value.replace(/\D+/g, ''),
+                                    )
+                                }
+                                placeholder="123"
+                            />
+                            {errors.public_code_number && (
+                                <span className="text-xs text-red-600">
+                                    {errors.public_code_number}
+                                </span>
+                            )}
+                        </label>
                         {errors.public_code && (
-                            <span className="text-xs text-red-600">
+                            <span className="text-xs text-red-600 sm:col-span-3">
                                 {errors.public_code}
                             </span>
                         )}
-                    </label>
+                    </div>
                     <label className="flex flex-col gap-1.5 text-sm font-medium">
-                        Teléfono usado al iniciar
+                        DNI usado al iniciar
                         <input
                             className="input"
-                            type="tel"
+                            type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            autoComplete="tel-national"
-                            value={data.phone}
+                            autoComplete="off"
+                            value={data.dni}
                             onChange={(event) =>
                                 setData(
-                                    'phone',
+                                    'dni',
                                     event.target.value.replace(/\D+/g, ''),
                                 )
                             }
                         />
-                        {errors.phone && (
+                        {errors.dni && (
                             <span className="text-xs text-red-600">
-                                {errors.phone}
+                                {errors.dni}
                             </span>
                         )}
                     </label>

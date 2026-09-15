@@ -26,6 +26,16 @@ test('public lighting complaint short URL redirects to the active form', functio
         ->assertRedirect('/reclamos/alumbrado-publico');
 });
 
+test('public tracking form exposes complaint categories and current year', function () {
+    $this->get(route('complaints.public.track'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('complaints/public/track')
+            ->where('currentYear', now()->year)
+            ->where('complaintCategories.0.prefix', 'ALU'),
+        );
+});
+
 test('citizen can create public lighting complaint and it is assigned to locality zone', function () {
     $type = ComplaintType::where('name', 'Luminaria apagada')->firstOrFail();
 
@@ -54,18 +64,54 @@ test('citizen can create public lighting complaint and it is assigned to localit
         ->and($complaint->statusHistories()->where('action', 'created')->exists())->toBeTrue();
 });
 
-test('public tracking requires matching phone', function () {
-    $complaint = Complaint::factory()->create(['phone' => '3834000000']);
+test('public tracking requires matching dni', function () {
+    $complaint = Complaint::factory()->create(['dni' => '30123456']);
 
     $this->post(route('complaints.public.track.submit'), [
         'public_code' => $complaint->public_code,
-        'phone' => 'otro',
+        'dni' => '28111222',
     ])->assertSessionHasErrors('public_code');
 
     $this->post(route('complaints.public.track.submit'), [
         'public_code' => $complaint->public_code,
-        'phone' => '3834000000',
+        'dni' => '30.123.456',
     ])->assertOk();
+});
+
+test('public tracking accepts the short complaint number with dni', function () {
+    $complaint = Complaint::factory()->create([
+        'public_code' => 'ALU-'.now()->format('Y').'-000123',
+        'dni' => '30123456',
+    ]);
+
+    $this->post(route('complaints.public.track.submit'), [
+        'public_code' => '123',
+        'dni' => '30.123.456',
+    ])
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('complaints/public/status')
+            ->where('complaint.public_code', $complaint->public_code),
+        );
+});
+
+test('public tracking accepts modular code parts with dni', function () {
+    $complaint = Complaint::factory()->create([
+        'public_code' => 'ALU-'.now()->format('Y').'-000124',
+        'dni' => '30123456',
+    ]);
+
+    $this->post(route('complaints.public.track.submit'), [
+        'public_code_prefix' => 'ALU',
+        'public_code_year' => now()->format('Y'),
+        'public_code_number' => '124',
+        'dni' => '30.123.456',
+    ])
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('complaints/public/status')
+            ->where('complaint.public_code', $complaint->public_code),
+        );
 });
 
 test('public tracking shows complaint details and public observations', function () {
@@ -78,7 +124,7 @@ test('public tracking shows complaint details and public observations', function
         'complaint_type_id' => $type->id,
         'locality_id' => $locality->id,
         'operational_zone_id' => $zone->id,
-        'phone' => '3834555000',
+        'dni' => '30123456',
         'street' => 'Av. La Callecita',
         'street_number' => '123',
         'neighborhood' => 'Centro',
@@ -97,7 +143,7 @@ test('public tracking shows complaint details and public observations', function
 
     $this->post(route('complaints.public.track.submit'), [
         'public_code' => $complaint->public_code,
-        'phone' => '3834555000',
+        'dni' => '30123456',
     ])
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
