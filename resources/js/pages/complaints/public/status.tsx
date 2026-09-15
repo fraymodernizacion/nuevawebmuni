@@ -27,6 +27,7 @@ type Props = {
         photos: ComplaintPhoto[];
         timeline: {
             action: string;
+            status: string | null;
             date: string | null;
             status_label: string | null;
             observation: string | null;
@@ -131,37 +132,60 @@ export default function PublicComplaintStatus({ complaint }: Props) {
                             Historial y observaciones
                         </h2>
                         <ol className="mt-5 flex flex-col gap-4 border-l border-zinc-200 pl-5 dark:border-zinc-800">
-                            {complaint.timeline.map((item, index) => (
-                                <li
-                                    key={`${item.date}-${index}`}
-                                    className="relative text-sm"
-                                >
-                                    <span className="absolute top-1 -left-[27px] size-3 rounded-full bg-amber-500 ring-4 ring-white dark:ring-zinc-900" />
-                                    <div className="flex flex-col gap-1 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/70">
-                                        <span className="text-xs font-semibold text-zinc-500">
-                                            {item.date ?? '-'}
-                                        </span>
-                                        <p className="font-bold">
-                                            {item.status_label ??
-                                                actionLabel(item.action)}
-                                        </p>
-                                        {item.observation ? (
-                                            <p className="leading-6 text-zinc-700 dark:text-zinc-200">
-                                                {item.observation}
+                            {complaint.timeline.map((item, index) => {
+                                const isResolved = item.status === 'resolved';
+
+                                return (
+                                    <li
+                                        key={`${item.date}-${index}`}
+                                        className="relative text-sm"
+                                    >
+                                        <span
+                                            className={`absolute top-1 -left-[27px] size-3 rounded-full ring-4 ring-white dark:ring-zinc-900 ${
+                                                isResolved
+                                                    ? 'bg-emerald-500'
+                                                    : 'bg-amber-500'
+                                            }`}
+                                        />
+                                        <div
+                                            className={`flex flex-col gap-1 rounded-2xl p-4 ${
+                                                isResolved
+                                                    ? 'border border-emerald-200 bg-emerald-50 dark:border-emerald-900/70 dark:bg-emerald-950/30'
+                                                    : 'bg-zinc-50 dark:bg-zinc-800/70'
+                                            }`}
+                                        >
+                                            <span className="text-xs font-semibold text-zinc-500">
+                                                {item.date ?? '-'}
+                                            </span>
+                                            <p
+                                                className={`font-bold ${
+                                                    isResolved
+                                                        ? 'text-emerald-700 dark:text-emerald-300'
+                                                        : ''
+                                                }`}
+                                            >
+                                                {item.status_label ??
+                                                    actionLabel(item.action)}
                                             </p>
-                                        ) : (
-                                            <p className="text-zinc-500 dark:text-zinc-400">
-                                                Sin observaciones registradas.
-                                            </p>
-                                        )}
-                                        {item.photos.length > 0 && (
-                                            <TimelinePhotos
-                                                photos={item.photos}
-                                            />
-                                        )}
-                                    </div>
-                                </li>
-                            ))}
+                                            {item.observation ? (
+                                                <p className="leading-6 text-zinc-700 dark:text-zinc-200">
+                                                    {item.observation}
+                                                </p>
+                                            ) : (
+                                                <p className="text-zinc-500 dark:text-zinc-400">
+                                                    Sin observaciones
+                                                    registradas.
+                                                </p>
+                                            )}
+                                            {item.photos.length > 0 && (
+                                                <TimelinePhotos
+                                                    photos={item.photos}
+                                                />
+                                            )}
+                                        </div>
+                                    </li>
+                                );
+                            })}
                         </ol>
                     </section>
                 </section>
