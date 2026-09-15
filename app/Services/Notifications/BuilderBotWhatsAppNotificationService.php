@@ -43,6 +43,36 @@ class BuilderBotWhatsAppNotificationService implements WhatsAppNotificationServi
             $payload['messages']['mediaUrl'] = $photoUrl;
         }
 
+        $result = $this->sendPayload($botId, $apiKey, $payload);
+
+        if ($result['status'] === 'sent' || $photoUrl === null) {
+            return $result;
+        }
+
+        $fallbackPayload = $payload;
+        unset($fallbackPayload['messages']['mediaUrl']);
+
+        $fallbackResult = $this->sendPayload($botId, $apiKey, $fallbackPayload);
+
+        if ($fallbackResult['status'] === 'sent') {
+            return $fallbackResult;
+        }
+
+        return [
+            'status' => 'failed',
+            'recipient' => $payload['number'],
+            'external_id' => null,
+            'error' => trim(($result['error'] ?? '').' '.($fallbackResult['error'] ?? '')),
+            'payload' => $payload,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{status: string, recipient?: string, external_id?: string|null, error?: string|null, payload?: array<string, mixed>}
+     */
+    private function sendPayload(string $botId, string $apiKey, array $payload): array
+    {
         try {
             $response = Http::baseUrl(rtrim((string) config('services.builderbot.base_url'), '/'))
                 ->withHeaders([
@@ -57,7 +87,7 @@ class BuilderBotWhatsAppNotificationService implements WhatsAppNotificationServi
         } catch (ConnectionException|RequestException $exception) {
             return [
                 'status' => 'failed',
-                'recipient' => $payload['number'],
+                'recipient' => (string) $payload['number'],
                 'external_id' => null,
                 'error' => $exception->getMessage(),
                 'payload' => $payload,
@@ -67,7 +97,7 @@ class BuilderBotWhatsAppNotificationService implements WhatsAppNotificationServi
         if ($response->failed()) {
             return [
                 'status' => 'failed',
-                'recipient' => $payload['number'],
+                'recipient' => (string) $payload['number'],
                 'external_id' => null,
                 'error' => $this->errorMessage($response->body()),
                 'payload' => $payload,
@@ -76,7 +106,7 @@ class BuilderBotWhatsAppNotificationService implements WhatsAppNotificationServi
 
         return [
             'status' => 'sent',
-            'recipient' => $payload['number'],
+            'recipient' => (string) $payload['number'],
             'external_id' => $response->json('id') ?? $response->json('messageId') ?? null,
             'payload' => $payload,
         ];

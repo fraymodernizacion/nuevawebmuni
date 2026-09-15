@@ -91,6 +91,32 @@ test('builderbot service sends intervention photo as media url and text link', f
     });
 });
 
+test('builderbot service falls back to text link when media send fails', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'app.builderbot.cloud/api/v2/bot-id/messages' => Http::sequence()
+            ->push(['error' => 'Invalid media url.'], 400)
+            ->push(['error' => 'Invalid media url.'], 400)
+            ->push(['error' => 'Invalid media url.'], 400)
+            ->push(['error' => 'Invalid media url.'], 400)
+            ->push(['messageId' => 'message-fallback'], 200),
+    ]);
+
+    builderBotConfig();
+
+    $result = app(BuilderBotWhatsAppNotificationService::class)
+        ->sendComplaintMessage(complaintForWhatsApp(), ComplaintStatus::InProgress->value, [
+            'intervention_photo_url' => 'https://municipio.test/storage/intervencion.jpg',
+        ]);
+
+    expect($result['status'])->toBe('sent')
+        ->and($result['external_id'])->toBe('message-fallback')
+        ->and($result['payload']['messages'])->not->toHaveKey('mediaUrl')
+        ->and($result['payload']['messages']['content'])->toContain('Foto de la intervencion: https://municipio.test/storage/intervencion.jpg');
+
+    Http::assertSentCount(5);
+});
+
 test('builderbot service uses the same payload shape as the provided messages curl', function () {
     Http::preventStrayRequests();
     Http::fake([

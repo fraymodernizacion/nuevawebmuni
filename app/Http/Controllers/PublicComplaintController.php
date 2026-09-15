@@ -6,6 +6,7 @@ use App\Http\Requests\StorePublicComplaintRequest;
 use App\Http\Requests\TrackComplaintRequest;
 use App\Models\Complaint;
 use App\Models\ComplaintCategory;
+use App\Models\ComplaintPhoto;
 use App\Models\Locality;
 use App\Services\Complaints\CreateComplaint;
 use Illuminate\Http\RedirectResponse;
@@ -61,6 +62,7 @@ class PublicComplaintController extends Controller
             'locality:id,name',
             'operationalZone:id,code,name,color',
             'type:id,name',
+            'photos',
             'publicTimeline',
         ]);
 
@@ -95,6 +97,7 @@ class PublicComplaintController extends Controller
             'locality:id,name',
             'operationalZone:id,code,name,color',
             'type:id,name',
+            'photos',
             'publicTimeline',
         ])
             ->where('dni', $validated['dni'])
@@ -140,6 +143,14 @@ class PublicComplaintController extends Controller
                 'neighborhood' => $complaint->neighborhood,
                 'reference' => $complaint->location_reference,
             ],
+            'photos' => $complaint->photos->map(fn (ComplaintPhoto $photo): array => [
+                'id' => $photo->id,
+                'type' => $photo->type->value,
+                'type_label' => $photo->type->label(),
+                'url' => $photo->url(),
+                'original_name' => $photo->original_name,
+                'taken_at' => $photo->taken_at?->format('d/m/Y H:i'),
+            ])->values(),
             'timeline' => $complaint->publicTimeline->map(fn ($history): array => [
                 'action' => $history->action,
                 'status' => $history->to_status?->value,

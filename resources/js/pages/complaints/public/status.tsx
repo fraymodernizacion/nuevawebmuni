@@ -19,6 +19,7 @@ type Props = {
             neighborhood: string | null;
             reference: string | null;
         };
+        photos: ComplaintPhoto[];
         timeline: {
             action: string;
             date: string | null;
@@ -26,6 +27,15 @@ type Props = {
             observation: string | null;
         }[];
     };
+};
+
+type ComplaintPhoto = {
+    id: number;
+    type: string;
+    type_label: string;
+    url: string;
+    original_name: string | null;
+    taken_at: string | null;
 };
 
 export default function PublicComplaintStatus({ complaint }: Props) {
@@ -38,6 +48,12 @@ export default function PublicComplaintStatus({ complaint }: Props) {
     ]
         .filter(Boolean)
         .join(' ');
+    const neighborPhotos = complaint.photos.filter(
+        (photo) => photo.type === 'initial',
+    );
+    const crewPhotos = complaint.photos.filter(
+        (photo) => photo.type !== 'initial',
+    );
 
     return (
         <>
@@ -110,6 +126,31 @@ export default function PublicComplaintStatus({ complaint }: Props) {
                     </section>
 
                     <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <div className="flex flex-col gap-1">
+                            <h2 className="text-xl font-bold">
+                                Fotos del reclamo
+                            </h2>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                Imágenes cargadas por el vecino y por el equipo
+                                de cuadrilla durante las intervenciones.
+                            </p>
+                        </div>
+
+                        <PhotoGroup
+                            className="mt-5"
+                            title="Vecino"
+                            emptyText="El vecino no cargó foto inicial."
+                            photos={neighborPhotos}
+                        />
+                        <PhotoGroup
+                            className="mt-5"
+                            title="Intervenciones de cuadrilla"
+                            emptyText="Todavía no hay fotos de intervenciones."
+                            photos={crewPhotos}
+                        />
+                    </section>
+
+                    <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <h2 className="text-xl font-bold">
                             Historial y observaciones
                         </h2>
@@ -145,6 +186,59 @@ export default function PublicComplaintStatus({ complaint }: Props) {
                 </section>
             </main>
         </>
+    );
+}
+
+function PhotoGroup({
+    className = '',
+    title,
+    emptyText,
+    photos,
+}: {
+    className?: string;
+    title: string;
+    emptyText: string;
+    photos: ComplaintPhoto[];
+}) {
+    return (
+        <div className={className}>
+            <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-200">
+                {title}
+            </h3>
+            {photos.length > 0 ? (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {photos.map((photo) => (
+                        <a
+                            key={photo.id}
+                            href={photo.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 transition hover:border-amber-400 dark:border-zinc-800 dark:bg-zinc-800/70"
+                        >
+                            <img
+                                src={photo.url}
+                                alt={photo.original_name ?? photo.type_label}
+                                className="aspect-[4/3] w-full bg-zinc-100 object-cover transition group-hover:scale-[1.02] dark:bg-zinc-950"
+                            />
+                            <div className="flex flex-col gap-1 p-3 text-sm">
+                                <span className="font-semibold">
+                                    {photo.type_label}
+                                </span>
+                                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                    {photo.taken_at ??
+                                        photo.original_name ??
+                                        'Sin fecha registrada'}
+                                </span>
+                            </div>
+                        </a>
+                    ))}
+                </div>
+            ) : (
+                <p className="mt-3 rounded-2xl bg-zinc-50 p-4 text-sm text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
+                    {emptyText}
+                </p>
+            )}
+        </div>
     );
 }
 

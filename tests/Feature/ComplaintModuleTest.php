@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ComplaintPhotoType;
 use App\Enums\ComplaintStatus;
 use App\Enums\WorkRouteStatus;
 use App\Models\Complaint;
@@ -11,6 +12,7 @@ use App\Models\OperationalZone;
 use App\Models\User;
 use App\Models\WorkRoute;
 use Database\Seeders\ComplaintModuleSeeder;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -138,6 +140,8 @@ test('signed public status link opens complaint detail', function () {
 });
 
 test('public tracking shows complaint details and public observations', function () {
+    Storage::fake('public');
+
     $zone = OperationalZone::where('code', 'A')->firstOrFail();
     $locality = Locality::whereBelongsTo($zone, 'operationalZone')->firstOrFail();
     $category = ComplaintCategory::where('code', 'alumbrado_publico')->firstOrFail();
@@ -164,6 +168,26 @@ test('public tracking shows complaint details and public observations', function
         'changed_at' => now(),
     ]);
 
+    $complaint->photos()->create([
+        'type' => ComplaintPhotoType::Initial,
+        'disk' => 'public',
+        'path' => 'complaints/'.$complaint->id.'/vecino.jpg',
+        'original_name' => 'vecino.jpg',
+        'mime_type' => 'image/jpeg',
+        'size' => 12345,
+        'created_at' => now()->subMinute(),
+    ]);
+
+    $complaint->photos()->create([
+        'type' => ComplaintPhotoType::Intervention,
+        'disk' => 'public',
+        'path' => 'complaints/'.$complaint->id.'/intervencion.jpg',
+        'original_name' => 'intervencion.jpg',
+        'mime_type' => 'image/jpeg',
+        'size' => 54321,
+        'created_at' => now(),
+    ]);
+
     $this->post(route('complaints.public.track.submit'), [
         'public_code' => $complaint->public_code,
         'dni' => '30123456',
@@ -175,6 +199,11 @@ test('public tracking shows complaint details and public observations', function
             ->where('complaint.description', 'La luminaria parpadea durante la noche.')
             ->where('complaint.location.locality', $locality->name)
             ->where('complaint.location.reference', 'Frente a la plaza principal')
+            ->has('complaint.photos', 2)
+            ->where('complaint.photos.0.type', ComplaintPhotoType::Initial->value)
+            ->where('complaint.photos.0.url', Storage::disk('public')->url('complaints/'.$complaint->id.'/vecino.jpg'))
+            ->where('complaint.photos.1.type', ComplaintPhotoType::Intervention->value)
+            ->where('complaint.photos.1.url', Storage::disk('public')->url('complaints/'.$complaint->id.'/intervencion.jpg'))
             ->where('complaint.timeline.0.observation', 'La cuadrilla reviso el tablero y volvera con repuesto.'),
         );
 });
