@@ -870,7 +870,27 @@ function phoneUrl(phone: string) {
 
 function whatsappUrl(phone: string) {
     const digits = phone.replace(/\D+/g, '');
-    const normalized = digits.startsWith('549') ? digits : `549${digits}`;
+    const normalized = normalizeArgentinianMobileForWhatsApp(digits);
 
     return `https://wa.me/${normalized}`;
+}
+
+function normalizeArgentinianMobileForWhatsApp(digits: string) {
+    if (digits.startsWith('549')) {
+        return digits;
+    }
+
+    if (digits.startsWith('54')) {
+        return `549${digits.slice(2)}`;
+    }
+
+    if (digits.startsWith('0')) {
+        return `549${digits.slice(1)}`;
+    }
+
+    if (digits.startsWith('9')) {
+        return `54${digits}`;
+    }
+
+    return `549${digits}`;
 }
