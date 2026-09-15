@@ -104,7 +104,7 @@ class StorePublicComplaintRequest extends FormRequest
         }
 
         if (str_starts_with($digits, '54') && strlen($digits) === 12) {
-            return $digits;
+            return '549'.substr($digits, 2);
         }
 
         if (str_starts_with($digits, '9') && strlen($digits) === 11) {
@@ -112,7 +112,7 @@ class StorePublicComplaintRequest extends FormRequest
         }
 
         if (strlen($digits) === 10) {
-            return '54'.$digits;
+            return '549'.$digits;
         }
 
         return $digits;

@@ -60,7 +60,7 @@ test('citizen can create public lighting complaint and it is assigned to localit
         ->and($complaint->first_name)->toBe('Ana')
         ->and($complaint->last_name)->toBe('Gómez')
         ->and($complaint->dni)->toBe('30123456')
-        ->and($complaint->phone)->toBe('543834000000')
+        ->and($complaint->phone)->toBe('5493834000000')
         ->and($complaint->current_status)->toBe(ComplaintStatus::New)
         ->and($complaint->statusHistories()->where('action', 'created')->exists())->toBeTrue();
 });
@@ -312,7 +312,7 @@ test('operator can update complaint neighbor data and records history', function
 
     expect($complaint->first_name)->toBe('Ana Maria')
         ->and($complaint->dni)->toBe('30999888')
-        ->and($complaint->phone)->toBe('543834556677')
+        ->and($complaint->phone)->toBe('5493834556677')
         ->and($complaint->email)->toBe('ana@example.com')
         ->and($complaint->street)->toBe('Belgrano')
         ->and($complaint->statusHistories()->where('action', 'neighbor_updated')->exists())->toBeTrue();
@@ -338,7 +338,7 @@ test('superadmin can update complaint neighbor data', function () {
         ])
         ->assertRedirect();
 
-    expect($complaint->refresh()->phone)->toBe('543834223344')
+    expect($complaint->refresh()->phone)->toBe('5493834223344')
         ->and($complaint->first_name)->toBe('Carlos')
         ->and($complaint->dni)->toBe('28111222');
 });
