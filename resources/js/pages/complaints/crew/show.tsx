@@ -736,6 +736,19 @@ export default function CrewComplaintShow({
                                         {event.observation}
                                     </p>
                                 )}
+                                {event.new_values?.internal_observation && (
+                                    <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900/60 dark:bg-amber-950/30">
+                                        <p className="text-xs font-semibold">
+                                            Observación interna de la cuadrilla
+                                        </p>
+                                        <p className="mt-1 whitespace-pre-wrap">
+                                            {
+                                                event.new_values
+                                                    .internal_observation
+                                            }
+                                        </p>
+                                    </div>
+                                )}
                             </article>
                         ))}
                     </div>

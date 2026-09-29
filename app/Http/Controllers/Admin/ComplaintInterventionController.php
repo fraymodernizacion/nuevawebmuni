@@ -133,7 +133,7 @@ class ComplaintInterventionController extends Controller
                 'from_status' => $oldStatus,
                 'to_status' => $status,
                 'action' => 'intervention',
-                'observation' => $validated['citizen_message'] ?? $validated['observations'] ?? $validated['second_visit_reason'] ?? null,
+                'observation' => $validated['citizen_message'] ?? null,
                 'new_values' => [
                     'response_code' => $validated['response_code'] ?? null,
                     'citizen_message' => $validated['citizen_message'] ?? null,

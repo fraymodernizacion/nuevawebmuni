@@ -168,6 +168,7 @@ test('public tracking shows complaint details and public observations', function
         'to_status' => ComplaintStatus::InProgress,
         'action' => 'intervention',
         'observation' => 'La cuadrilla reviso el tablero y volvera con repuesto.',
+        'new_values' => ['citizen_message' => 'La cuadrilla reviso el tablero y volvera con repuesto.'],
         'changed_at' => now(),
     ]);
 
@@ -211,6 +212,58 @@ test('public tracking shows complaint details and public observations', function
             ->where('complaint.timeline.0.photos.0.url', Storage::disk('public')->url('complaints/'.$complaint->id.'/intervencion.jpg'))
             ->where('complaint.timeline.1.observation', 'La cuadrilla reviso el tablero y volvera con repuesto.'),
         );
+});
+
+test('internal crew observations stay in staff details and never reach public tracking', function () {
+    $crew = Crew::firstOrFail();
+    $crewMember = User::factory()->crewMember()->create(['primary_crew_id' => $crew->id]);
+    $admin = User::factory()->admin()->create();
+    $complaint = Complaint::factory()->create([
+        'assigned_crew_id' => $crew->id,
+        'current_status' => ComplaintStatus::Assigned,
+        'dni' => '30123456',
+    ]);
+
+    $this->actingAs($crewMember)
+        ->post(route('admin.complaints.interventions.store', $complaint), [
+            'status' => ComplaintStatus::InProgress->value,
+            'observations' => 'Revisar cableado interno del poste.',
+            'send_whatsapp' => false,
+        ])
+        ->assertRedirect();
+
+    expect($complaint->interventions()->firstOrFail()->observations)->toBe('Revisar cableado interno del poste.');
+
+    $this->actingAs($crewMember)
+        ->get(route('crew.work.show', $complaint))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('complaint.history.0.new_values.internal_observation', 'Revisar cableado interno del poste.'));
+
+    $this->actingAs($admin)
+        ->get(route('admin.complaints.show', $complaint))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('complaint.interventions.0.observations', 'Revisar cableado interno del poste.')
+            ->where('complaint.status_histories.0.new_values.internal_observation', 'Revisar cableado interno del poste.'));
+
+    $complaint->statusHistories()->where('action', 'intervention')->update([
+        'observation' => 'Revisar cableado interno del poste.',
+    ]);
+
+    $this->get(URL::signedRoute('complaints.public.status', $complaint))
+        ->assertDontSee('Revisar cableado interno del poste.')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('complaint.timeline.0.observation', null)
+            ->missing('complaint.timeline.0.new_values')
+            ->missing('complaint.interventions'));
+
+    $this->post(route('complaints.public.track.submit'), [
+        'public_code' => $complaint->public_code,
+        'dni' => '30123456',
+    ])
+        ->assertDontSee('Revisar cableado interno del poste.')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('complaint.timeline.0.observation', null)
+            ->missing('complaint.timeline.0.new_values'));
 });
 
 test('admin can open complaint detail page', function () {

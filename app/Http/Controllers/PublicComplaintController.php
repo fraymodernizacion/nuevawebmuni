@@ -146,7 +146,9 @@ class PublicComplaintController extends Controller
             'action' => $history->action,
             'status' => $history->to_status?->value,
             'status_label' => $history->to_status?->label(),
-            'observation' => $history->observation,
+            'observation' => $history->action === 'intervention'
+                ? ($history->new_values['citizen_message'] ?? null)
+                : $history->observation,
             'date' => LocalDateTime::format($history->changed_at),
             'sort_date' => $history->changed_at?->timestamp ?? 0,
             'photos' => [],

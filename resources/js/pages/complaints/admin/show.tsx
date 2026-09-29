@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Expand, MapPin, MessageCircle, Save } from 'lucide-react';
-import { FormEvent, ReactNode, useState } from 'react';
+import { useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { updateNeighbor } from '@/actions/App/Http/Controllers/Admin/ComplaintController';
 import { update as updateStatus } from '@/actions/App/Http/Controllers/Admin/ComplaintStatusController';
 import { StaticLocationMap } from '@/components/complaints/static-location-map';
@@ -351,6 +352,20 @@ export default function AdminComplaintShow({
                                             {item.observation}
                                         </p>
                                     )}
+                                    {item.new_values?.internal_observation && (
+                                        <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900/60 dark:bg-amber-950/30">
+                                            <p className="text-xs font-semibold">
+                                                Observación interna de la
+                                                cuadrilla
+                                            </p>
+                                            <p className="mt-1 whitespace-pre-wrap">
+                                                {
+                                                    item.new_values
+                                                        .internal_observation
+                                                }
+                                            </p>
+                                        </div>
+                                    )}
                                 </li>
                             ))}
                         </ol>
@@ -408,9 +423,15 @@ export default function AdminComplaintShow({
                                             </span>
                                         </div>
                                         {intervention.observations && (
-                                            <p className="mt-2">
-                                                {intervention.observations}
-                                            </p>
+                                            <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900/60 dark:bg-amber-950/30">
+                                                <p className="text-xs font-semibold">
+                                                    Observación interna de la
+                                                    cuadrilla
+                                                </p>
+                                                <p className="mt-1 whitespace-pre-wrap">
+                                                    {intervention.observations}
+                                                </p>
+                                            </div>
                                         )}
                                         {intervention.internal_supplies_notes && (
                                             <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
