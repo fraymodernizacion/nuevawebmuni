@@ -84,6 +84,13 @@ test('crew intervention consumes previously withdrawn inventory and records the 
         ->and($complaint->interventions()->first()->materials)->toHaveCount(1)
         ->and($complaint->interventions()->first()->materials->first()->inventory_item_code)->toBe('ALU-TEST-001');
 
+    $this->actingAs($crewMember)
+        ->get(route('crew.work.show', $complaint))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('inventoryItems.0.pending_quantity', 1),
+        );
+
     $withdrawal = InventoryMovement::query()
         ->whereBelongsTo($inventoryItem)
         ->where('movement_type', 'provisional_withdrawal')

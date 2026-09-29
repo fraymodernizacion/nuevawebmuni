@@ -112,6 +112,7 @@ class PendingInventoryWithdrawals
         $withdrawalIds = $withdrawals->pluck('id')->all();
         $appliedQuantities = InventoryMovement::query()
             ->whereIn('movement_type', ['complaint_consumption', 'return_surplus'])
+            ->whereIn('metadata->withdrawal_movement_id', $withdrawalIds)
             ->get(['id', 'movement_type', 'quantity', 'metadata'])
             ->toBase()
             ->groupBy(fn (InventoryMovement $movement): int => (int) ($movement->metadata['withdrawal_movement_id'] ?? 0))
