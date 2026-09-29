@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { Maximize2, Minimize2, Navigation } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { show as showAdminComplaint } from '@/actions/App/Http/Controllers/Admin/ComplaintController';
 import { show as showCrewComplaint } from '@/actions/App/Http/Controllers/CrewWorkController';
 
@@ -118,7 +119,7 @@ export function PendingComplaintsMap({
 
         return () =>
             mapElement.removeEventListener('click', openComplaint, true);
-    }, []);
+    }, [fullScreen]);
 
     useEffect(() => {
         if (!fullScreen) {
@@ -160,14 +161,6 @@ export function PendingComplaintsMap({
             window.removeEventListener('resize', resizeMap);
             window.cancelAnimationFrame(frame);
         };
-    }, []);
-
-    useEffect(() => {
-        const frame = window.requestAnimationFrame(() =>
-            mapRef.current?.invalidateSize?.(),
-        );
-
-        return () => window.cancelAnimationFrame(frame);
     }, [fullScreen]);
 
     useEffect(() => {
@@ -256,7 +249,7 @@ export function PendingComplaintsMap({
             mapRef.current = null;
             operatorMarkerRef.current = null;
         };
-    }, [complaints, detailRoute]);
+    }, [complaints, detailRoute, fullScreen]);
 
     const visibleComplaints = complaints.filter(
         (complaint) =>
@@ -264,9 +257,9 @@ export function PendingComplaintsMap({
             Number.isFinite(Number(complaint.longitude)),
     );
 
-    return (
+    const mapContent = (
         <section
-            className={`gap-3 rounded-lg border bg-card p-4 ${fullScreen ? 'fixed inset-0 z-[1000] flex h-dvh flex-col overflow-y-auto' : 'grid'}`}
+            className={`gap-3 rounded-lg border bg-card p-4 ${fullScreen ? 'fixed inset-0 z-[2000] flex h-dvh flex-col overflow-y-auto' : 'grid'}`}
         >
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -328,7 +321,7 @@ export function PendingComplaintsMap({
             >
                 <div
                     ref={elementRef}
-                    className={`${fullScreen ? 'h-full min-h-[40vh]' : 'h-96'} w-full touch-pan-y`}
+                    className={`${fullScreen ? 'absolute inset-0 size-full' : 'h-96'} w-full touch-pan-y`}
                 />
             </div>
             {visibleComplaints.length === 0 && (
@@ -338,6 +331,8 @@ export function PendingComplaintsMap({
             )}
         </section>
     );
+
+    return fullScreen ? createPortal(mapContent, document.body) : mapContent;
 
     function showOperatorLocation() {
         if (!navigator.geolocation) {

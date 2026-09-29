@@ -1,5 +1,6 @@
 import { Maximize2, Minimize2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 type LeafletNamespace = {
     map: (element: HTMLElement, options: Record<string, unknown>) => LeafletMap;
@@ -39,7 +40,10 @@ export function StaticLocationMap({
     const mapRef = useRef<LeafletMap | null>(null);
     const markerRef = useRef<LeafletMarker | null>(null);
     const [fullScreen, setFullScreen] = useState(false);
-    const position: [number, number] = [Number(latitude), Number(longitude)];
+    const position = useMemo<[number, number]>(
+        () => [Number(latitude), Number(longitude)],
+        [latitude, longitude],
+    );
 
     useEffect(() => {
         let mounted = true;
@@ -85,7 +89,7 @@ export function StaticLocationMap({
             mapRef.current = null;
             markerRef.current = null;
         };
-    }, []);
+    }, [fullScreen, position]);
 
     useEffect(() => {
         if (!active || !mapRef.current) {
@@ -97,7 +101,7 @@ export function StaticLocationMap({
             mapRef.current?.setView(position, 17);
             markerRef.current?.setLatLng(position);
         }, 120);
-    }, [active, latitude, longitude]);
+    }, [active, position]);
 
     useEffect(() => {
         const mapElement = elementRef.current;
@@ -124,14 +128,6 @@ export function StaticLocationMap({
             window.removeEventListener('resize', resizeMap);
             window.cancelAnimationFrame(frame);
         };
-    }, []);
-
-    useEffect(() => {
-        const frame = window.requestAnimationFrame(() =>
-            mapRef.current?.invalidateSize(),
-        );
-
-        return () => window.cancelAnimationFrame(frame);
     }, [fullScreen]);
 
     useEffect(() => {
@@ -149,9 +145,9 @@ export function StaticLocationMap({
         return () => window.removeEventListener('keydown', closeOnEscape);
     }, [fullScreen]);
 
-    return (
+    const mapContent = (
         <div
-            className={`overflow-hidden rounded-md border bg-background ${fullScreen ? 'fixed inset-0 z-[1000] flex h-dvh flex-col p-3' : ''}`}
+            className={`overflow-hidden rounded-md border bg-background ${fullScreen ? 'fixed inset-0 z-[2000] flex h-dvh flex-col p-3' : ''}`}
         >
             <button
                 type="button"
@@ -167,10 +163,12 @@ export function StaticLocationMap({
             </button>
             <div
                 ref={elementRef}
-                className={`${fullScreen ? 'h-[calc(100dvh-5rem)] min-h-0' : className} w-full`}
+                className={`${fullScreen ? 'min-h-0 flex-1' : className} w-full`}
             />
         </div>
     );
+
+    return fullScreen ? createPortal(mapContent, document.body) : mapContent;
 }
 
 function loadLeaflet(): Promise<void> {
