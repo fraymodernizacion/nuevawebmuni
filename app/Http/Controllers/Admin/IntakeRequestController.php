@@ -12,9 +12,12 @@ use App\Models\Complaint;
 use App\Models\IntakeAssistanceType;
 use App\Models\IntakeDepartment;
 use App\Models\IntakeDerivation;
+use App\Models\IntakeDerivationHistory;
 use App\Models\IntakeRequest;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,12 +29,17 @@ class IntakeRequestController extends Controller
 
         $status = $request->string('status')->toString();
         $search = $request->string('search')->toString();
+        $secretariat = $request->string('secretariat')->toString();
 
         return Inertia::render('intake/admin/index', [
-            'filters' => $request->only(['search', 'status']),
+            'filters' => $request->only(['search', 'status', 'secretariat']),
             'statuses' => IntakeRequestStatus::options(),
             'requests' => IntakeRequest::with('type:id,name,category,color')
                 ->when($status, fn ($query) => $query->where('status', $status))
+                ->when($secretariat, fn ($query) => $query->whereHas(
+                    'derivations.department',
+                    fn ($query) => $query->where('secretariat', $secretariat),
+                ))
                 ->when($search, fn ($query) => $query->where(function ($query) use ($search): void {
                     $query->where('public_code', 'like', "%{$search}%")
                         ->orWhere('applicant_name', 'like', "%{$search}%")
@@ -45,7 +53,69 @@ class IntakeRequestController extends Controller
                 'pending' => Complaint::whereIn('current_status', ComplaintStatus::pendingValues())->count(),
                 'new' => Complaint::where('current_status', ComplaintStatus::New)->count(),
             ],
+            'secretariatOptions' => $this->secretariatOptions(),
+            'unreadDerivationNotificationsCount' => $this->notificationQuery($secretariat)
+                ->whereNull('operator_seen_at')
+                ->count(),
+            'derivationNotifications' => $this->notificationQuery($secretariat)
+                ->whereNull('operator_seen_at')
+                ->latest('changed_at')
+                ->limit(8)
+                ->get()
+                ->map(fn (IntakeDerivationHistory $history): array => $this->derivationNotificationPayload($history)),
         ]);
+    }
+
+    public function notifications(Request $request): Response
+    {
+        abort_unless($request->user()?->canUseIntakeManagement(), 403);
+
+        $secretariat = $request->string('secretariat')->toString();
+        $readState = $request->string('read_state', 'unread')->toString();
+
+        return Inertia::render('intake/admin/notifications', [
+            'filters' => [
+                'secretariat' => $secretariat,
+                'read_state' => $readState,
+            ],
+            'secretariatOptions' => $this->secretariatOptions(),
+            'unreadCount' => $this->notificationQuery($secretariat)
+                ->whereNull('operator_seen_at')
+                ->count(),
+            'notifications' => $this->notificationQuery($secretariat)
+                ->when($readState === 'unread', fn (Builder $query) => $query->whereNull('operator_seen_at'))
+                ->when($readState === 'read', fn (Builder $query) => $query->whereNotNull('operator_seen_at'))
+                ->latest('changed_at')
+                ->paginate(20)
+                ->withQueryString()
+                ->through(fn (IntakeDerivationHistory $history): array => $this->derivationNotificationPayload($history)),
+        ]);
+    }
+
+    public function markNotificationsAsRead(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->canUseIntakeManagement(), 403);
+
+        $secretariat = $request->string('secretariat')->toString();
+        $readState = $request->string('read_state', 'unread')->toString();
+
+        $this->notificationQuery($secretariat)
+            ->when($readState === 'read', fn (Builder $query) => $query->whereNotNull('operator_seen_at'))
+            ->when($readState !== 'read', fn (Builder $query) => $query->whereNull('operator_seen_at'))
+            ->update(['operator_seen_at' => now()]);
+
+        return back()->with('success', 'Notificaciones marcadas como leidas.');
+    }
+
+    public function markNotificationAsRead(Request $request, IntakeDerivationHistory $intakeDerivationHistory): RedirectResponse
+    {
+        abort_unless($request->user()?->canUseIntakeManagement(), 403);
+
+        $intakeDerivationHistory->update([
+            'operator_seen_at' => now(),
+        ]);
+
+        return back()->with('success', 'Notificacion marcada como leida.');
     }
 
     public function show(Request $request, IntakeRequest $intakeRequest): Response
@@ -60,6 +130,7 @@ class IntakeRequestController extends Controller
             'derivations.department:id,name,color',
             'derivations.assistanceType:id,name,color',
             'derivations.lastUpdater:id,name',
+            'derivations.histories.user:id,name',
         ]);
 
         return Inertia::render('intake/admin/show', [
@@ -181,6 +252,87 @@ class IntakeRequestController extends Controller
             'department' => $derivation->department,
             'assistance_type' => $derivation->assistanceType,
             'last_updater' => $derivation->lastUpdater,
+            'histories' => $derivation->histories
+                ->sortByDesc('changed_at')
+                ->map(fn (IntakeDerivationHistory $history): array => [
+                    'id' => $history->id,
+                    'action' => $history->action,
+                    'from_status' => $history->from_status?->value,
+                    'to_status' => $history->to_status?->value,
+                    'from_status_label' => $history->from_status?->label(),
+                    'to_status_label' => $history->to_status?->label(),
+                    'previous_response' => $history->previous_response,
+                    'new_response' => $history->new_response,
+                    'changed_at' => $history->changed_at?->toJSON(),
+                    'user' => $history->user ? ['name' => $history->user->name] : null,
+                ])
+                ->values(),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function derivationNotificationPayload(IntakeDerivationHistory $history): array
+    {
+        $derivation = $history->derivation;
+
+        return [
+            'id' => $history->id,
+            'action' => $history->action,
+            'from_status_label' => $history->from_status?->label(),
+            'to_status_label' => $history->to_status?->label(),
+            'previous_response' => $history->previous_response,
+            'new_response' => $history->new_response,
+            'changed_at' => $history->changed_at?->toJSON(),
+            'operator_seen_at' => $history->operator_seen_at?->toJSON(),
+            'is_seen' => $history->operator_seen_at !== null,
+            'user' => $history->user ? ['name' => $history->user->name] : null,
+            'department' => $derivation?->department ? [
+                'name' => $derivation->department->name,
+                'secretariat' => $derivation->department->secretariat,
+                'color' => $derivation->department->color,
+            ] : null,
+            'assistance_type' => $derivation?->assistanceType ? [
+                'name' => $derivation->assistanceType->name,
+                'color' => $derivation->assistanceType->color,
+            ] : null,
+            'request' => $derivation?->request ? [
+                'id' => $derivation->request->id,
+                'public_code' => $derivation->request->public_code,
+                'subject' => $derivation->request->subject,
+                'applicant_name' => $derivation->request->applicant_name,
+            ] : null,
+        ];
+    }
+
+    private function notificationQuery(?string $secretariat = null): Builder
+    {
+        return IntakeDerivationHistory::query()
+            ->with([
+                'derivation.department:id,name,secretariat,color',
+                'derivation.assistanceType:id,name,color',
+                'derivation.request:id,public_code,subject,applicant_name',
+                'user:id,name',
+            ])
+            ->when($secretariat, fn (Builder $query) => $query->whereHas(
+                'derivation.department',
+                fn (Builder $query) => $query->where('secretariat', $secretariat),
+            ));
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    private function secretariatOptions(): Collection
+    {
+        return IntakeDepartment::query()
+            ->where('active', true)
+            ->whereNotNull('secretariat')
+            ->distinct()
+            ->orderBy('secretariat')
+            ->pluck('secretariat')
+            ->filter()
+            ->values();
     }
 }

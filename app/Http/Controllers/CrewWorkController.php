@@ -8,6 +8,7 @@ use App\Models\Complaint;
 use App\Models\InventoryItem;
 use App\Models\OperationalZone;
 use App\Models\WorkRoute;
+use App\Services\Inventory\PendingInventoryWithdrawals;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -20,6 +21,10 @@ class CrewWorkController extends Controller
     {
         $user = $request->user();
         $zoneId = $request->integer('zone');
+        $statusFilter = $request->query('status', 'pending');
+        if (! in_array($statusFilter, ['pending', 'in_progress', 'resolved_today'], true)) {
+            $statusFilter = 'pending';
+        }
         $routePlanningEnabled = (bool) config('complaints.route_planning_enabled');
         $canManageComplaintOperations = $user->canUseComplaintManagement();
 
@@ -27,14 +32,18 @@ class CrewWorkController extends Controller
 
         $complaints = Complaint::with(['type:id,name', 'locality:id,name', 'operationalZone:id,code,name,color'])
             ->when(! $canManageComplaintOperations, fn ($query) => $query->where('assigned_crew_id', $user->primary_crew_id))
-            ->whereIn('current_status', ComplaintStatus::pendingValues())
+            ->when($statusFilter === 'pending', fn ($query) => $query->whereIn('current_status', ComplaintStatus::pendingValues()))
+            ->when($statusFilter === 'in_progress', fn ($query) => $query->where('current_status', ComplaintStatus::InProgress))
+            ->when($statusFilter === 'resolved_today', fn ($query) => $query->where('current_status', ComplaintStatus::Resolved)->whereDate('resolved_at', today()))
             ->when($zoneId, fn ($query) => $query->where('operational_zone_id', $zoneId))
             ->oldest()
             ->get();
 
         $pendingMapComplaints = Complaint::with(['type:id,name', 'locality:id,name', 'operationalZone:id,code,name,color'])
             ->when(! $canManageComplaintOperations, fn ($query) => $query->where('assigned_crew_id', $user->primary_crew_id))
-            ->whereIn('current_status', ComplaintStatus::pendingValues())
+            ->when($statusFilter === 'pending', fn ($query) => $query->whereIn('current_status', ComplaintStatus::pendingValues()))
+            ->when($statusFilter === 'in_progress', fn ($query) => $query->where('current_status', ComplaintStatus::InProgress))
+            ->when($statusFilter === 'resolved_today', fn ($query) => $query->where('current_status', ComplaintStatus::Resolved)->whereDate('resolved_at', today()))
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->when($zoneId, fn ($query) => $query->where('operational_zone_id', $zoneId))
@@ -83,6 +92,7 @@ class CrewWorkController extends Controller
                     ->count(),
             ],
             'selectedZoneId' => $zoneId,
+            'selectedStatus' => $statusFilter,
             'complaints' => $complaints,
             'pendingMapComplaints' => $pendingMapComplaints,
             'routePlanningEnabled' => $routePlanningEnabled,
@@ -98,7 +108,7 @@ class CrewWorkController extends Controller
         ]);
     }
 
-    public function show(Complaint $complaint): Response
+    public function show(Complaint $complaint, PendingInventoryWithdrawals $pendingWithdrawals): Response
     {
         abort_unless(request()->user()->canUseCrewWork(), 403);
 
@@ -114,11 +124,31 @@ class CrewWorkController extends Controller
             'statusHistories.user:id,name',
         ]);
 
+        $pendingInventoryItems = $pendingWithdrawals
+            ->forComplaint($complaint, request()->user())
+            ->keyBy(fn (array $pendingItem): int => $pendingItem['inventory_item']->id);
+
         return Inertia::render('complaints/crew/show', [
             'inventoryItems' => InventoryItem::query()
                 ->where('active', true)
                 ->orderBy('code')
-                ->get(['id', 'code', 'name', 'unit', 'current_stock', 'minimum_stock']),
+                ->get(['id', 'code', 'name', 'unit', 'current_stock', 'minimum_stock'])
+                ->map(function (InventoryItem $inventoryItem) use ($pendingInventoryItems): array {
+                    $pendingItem = $pendingInventoryItems->get($inventoryItem->id);
+
+                    return [
+                        'id' => $inventoryItem->id,
+                        'code' => $inventoryItem->code,
+                        'name' => $inventoryItem->name,
+                        'unit' => $inventoryItem->unit,
+                        'current_stock' => (float) $inventoryItem->current_stock,
+                        'minimum_stock' => (float) $inventoryItem->minimum_stock,
+                        'withdrawn_quantity' => $pendingItem['withdrawn_quantity'] ?? 0,
+                        'used_quantity' => $pendingItem['used_quantity'] ?? 0,
+                        'returned_quantity' => $pendingItem['returned_quantity'] ?? 0,
+                        'pending_quantity' => $pendingItem['pending_quantity'] ?? 0,
+                    ];
+                }),
             'complaint' => [
                 ...$complaint->toArray(),
                 'photos' => $complaint->photos->map(fn ($photo): array => [

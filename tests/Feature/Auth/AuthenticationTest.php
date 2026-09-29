@@ -2,12 +2,16 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('auth/login')
+            ->has('canResetPassword'));
 });
 
 test('users can authenticate using the login screen', function () {
@@ -20,6 +24,14 @@ test('users can authenticate using the login screen', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('dashboard sends users with crew work access to their work', function () {
+    $user = User::factory()->crewMember()->create();
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertRedirect(route('crew.work.index'));
 });
 
 test('users can authenticate with email', function () {

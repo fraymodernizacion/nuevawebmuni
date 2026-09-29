@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\IntakeConfigurationController;
 use App\Http\Controllers\Admin\IntakeRequestController as AdminIntakeRequestController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\InventoryLabelController;
+use App\Http\Controllers\Admin\InventoryQrMovementController;
 use App\Http\Controllers\Admin\RoutePlanningController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\CrewWorkController;
@@ -42,7 +43,7 @@ Route::get('/mesa-de-entrada/solicitudes/{type:slug}', [PublicIntakeRequestContr
 Route::post('/mesa-de-entrada/solicitudes/{type:slug}', [PublicIntakeRequestController::class, 'store'])->name('intake.public.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::redirect('dashboard', '/admin/reclamos/dashboard')->name('dashboard');
+    Route::get('dashboard', fn () => redirect()->route(request()->user()->canUseCrewWork() ? 'crew.work.index' : 'admin.complaints.dashboard'))->name('dashboard');
 
     Route::get('i/{code}', [InventoryQrController::class, 'show'])
         ->where('code', '[A-Za-z0-9\-]+')
@@ -50,6 +51,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('i/{code}/movimientos', [InventoryQrController::class, 'store'])
         ->where('code', '[A-Za-z0-9\-]+')
         ->name('inventory.qr.movements.store');
+    Route::post('i/{code}/devoluciones', [InventoryQrController::class, 'storeReturn'])
+        ->where('code', '[A-Za-z0-9\-]+')
+        ->name('inventory.qr.returns.store');
     Route::get('inventario/qr/{code}', [InventoryQrController::class, 'show'])
         ->where('code', '[A-Za-z0-9\-]+')
         ->name('inventory.qr.legacy.show');
@@ -69,6 +73,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('admin/inventario')->name('admin.inventory.')->group(function () {
         Route::get('/', [InventoryController::class, 'index'])->name('index');
+        Route::redirect('probar-qr', 'movimiento-qr');
+        Route::get('movimiento-qr', InventoryQrMovementController::class)->name('qr_movement');
         Route::get('etiquetas', [InventoryLabelController::class, 'index'])->name('labels.index');
         Route::get('etiquetas/imprimir', [InventoryLabelController::class, 'printBatch'])->name('labels.print');
         Route::get('crear', [InventoryController::class, 'create'])->name('create');
@@ -91,6 +97,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('configuracion/areas/{intakeDepartment}', [IntakeConfigurationController::class, 'updateDepartment'])->name('configuration.departments.update');
         Route::post('configuracion/tipos-asistencia', [IntakeConfigurationController::class, 'storeAssistanceType'])->name('configuration.assistance-types.store');
         Route::patch('configuracion/tipos-asistencia/{intakeAssistanceType}', [IntakeConfigurationController::class, 'updateAssistanceType'])->name('configuration.assistance-types.update');
+        Route::get('notificaciones', [AdminIntakeRequestController::class, 'notifications'])->name('notifications');
+        Route::patch('notificaciones/marcar-leidas', [AdminIntakeRequestController::class, 'markNotificationsAsRead'])->name('notifications.mark-read');
+        Route::patch('notificaciones/{intakeDerivationHistory}/marcar-leida', [AdminIntakeRequestController::class, 'markNotificationAsRead'])->name('notifications.mark-one-read');
         Route::get('{intakeRequest}', [AdminIntakeRequestController::class, 'show'])->name('show');
         Route::post('{intakeRequest}/derivaciones', [AdminIntakeRequestController::class, 'storeDerivations'])->name('derivations.store');
         Route::patch('{intakeRequest}/estado', [AdminIntakeRequestController::class, 'updateStatus'])->name('status.update');

@@ -1,7 +1,16 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Printer, Search, QrCode, TriangleAlert } from 'lucide-react';
-import { useState } from 'react';
-import type { FormEvent } from 'react';
+import {
+    LoaderCircle,
+    Plus,
+    Printer,
+    QrCode,
+    ScanLine,
+    Search,
+    TriangleAlert,
+    X,
+} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +24,7 @@ type InventoryItem = {
     code: string;
     category_label: string | null;
     name: string;
+    description: string | null;
     unit: string;
     current_stock: number;
     minimum_stock: number;
@@ -38,6 +48,7 @@ type Props = {
     };
     stockStates: { value: string; label: string }[];
     labelBatchUrl: string;
+    qrMovementUrl: string;
     summary: {
         total_items: number;
         active_items: number;
@@ -52,21 +63,77 @@ export default function InventoryIndex({
     filters,
     stockStates,
     labelBatchUrl,
+    qrMovementUrl,
     summary,
 }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [stockState, setStockState] = useState(filters.stock_state ?? 'all');
+    const [isSearching, setIsSearching] = useState(false);
+    const firstRender = useRef(true);
+    const latestVisitId = useRef(0);
+    const visibleItems = useMemo(
+        () => filterVisibleItems(items.data, search, stockState),
+        [items.data, search, stockState],
+    );
 
-    function submit(event: FormEvent) {
-        event.preventDefault();
+    function visitWithFilters(nextSearch: string, nextStockState: string) {
+        const visitId = latestVisitId.current + 1;
+
+        latestVisitId.current = visitId;
+        router.cancelAll();
+        setIsSearching(true);
+
         router.get(
             inventoryIndex.url(),
             {
-                search,
-                stock_state: stockState === 'all' ? '' : stockState,
+                search: nextSearch,
+                stock_state: nextStockState === 'all' ? '' : nextStockState,
             },
-            { preserveState: true },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onFinish: () => {
+                    if (latestVisitId.current === visitId) {
+                        setIsSearching(false);
+                    }
+                },
+            },
         );
+    }
+
+    useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+
+            return;
+        }
+
+        const timeout = window.setTimeout(() => {
+            visitWithFilters(search, stockState);
+        }, 300);
+
+        return () => window.clearTimeout(timeout);
+    }, [search, stockState]);
+
+    function submit(event: FormEvent) {
+        event.preventDefault();
+        visitWithFilters(search, stockState);
+    }
+
+    function clearSearch() {
+        setSearch('');
+    }
+
+    function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+        if (event.key === 'Escape' && search) {
+            event.preventDefault();
+            clearSearch();
+        }
+    }
+
+    function changeStockState(nextStockState: string) {
+        setStockState(nextStockState);
     }
 
     return (
@@ -84,6 +151,16 @@ export default function InventoryIndex({
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="self-start"
+                        >
+                            <Link href={qrMovementUrl} prefetch>
+                                <ScanLine className="size-4" />
+                                Movimiento QR
+                            </Link>
+                        </Button>
                         <Button
                             asChild
                             variant="outline"
@@ -121,21 +198,38 @@ export default function InventoryIndex({
 
                 <form
                     onSubmit={submit}
-                    className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-[1fr_220px_auto]"
+                    className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-[1fr_220px]"
                 >
                     <label className="relative">
-                        <Search className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                        {isSearching ? (
+                            <LoaderCircle className="absolute top-3 left-3 size-4 animate-spin text-muted-foreground" />
+                        ) : (
+                            <Search className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                        )}
                         <input
-                            className="input pl-9"
+                            className="input min-h-11 pr-9 pl-9 focus-visible:ring-2 focus-visible:ring-primary/40"
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
+                            onKeyDown={handleSearchKeyDown}
                             placeholder="Codigo, nombre, descripcion o QR"
                         />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={clearSearch}
+                                aria-label="Limpiar busqueda"
+                                className="absolute top-2 right-2 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        )}
                     </label>
                     <select
-                        className="input"
+                        className="input min-h-11"
                         value={stockState}
-                        onChange={(event) => setStockState(event.target.value)}
+                        onChange={(event) =>
+                            changeStockState(event.target.value)
+                        }
                     >
                         {stockStates.map((item) => (
                             <option key={item.value} value={item.value}>
@@ -143,13 +237,10 @@ export default function InventoryIndex({
                             </option>
                         ))}
                     </select>
-                    <Button type="submit" className="min-h-11">
-                        Filtrar
-                    </Button>
                 </form>
 
                 <section className="grid gap-3">
-                    {items.data.map((item) => (
+                    {visibleItems.map((item) => (
                         <Link
                             key={item.id}
                             href={inventoryShow(item.id)}
@@ -212,7 +303,7 @@ export default function InventoryIndex({
                             </div>
                         </Link>
                     ))}
-                    {items.data.length === 0 && (
+                    {visibleItems.length === 0 && (
                         <div className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
                             No hay insumos para estos filtros.
                         </div>
@@ -291,6 +382,39 @@ function formatStock(value: number): string {
     return value.toLocaleString('es-AR', {
         maximumFractionDigits: 0,
     });
+}
+
+function filterVisibleItems(
+    items: InventoryItem[],
+    search: string,
+    stockState: string,
+): InventoryItem[] {
+    const normalizedSearch = normalizeSearch(search);
+
+    return items.filter((item) => {
+        const matchesSearch =
+            normalizedSearch === '' ||
+            [
+                item.code,
+                item.name,
+                item.description ?? '',
+                item.qr_value,
+                item.category_label ?? '',
+            ]
+                .map(normalizeSearch)
+                .some((value) => value.includes(normalizedSearch));
+
+        const matchesStockState =
+            stockState === 'all' ||
+            (stockState === 'low' && item.low_stock) ||
+            (stockState === 'inactive' && !item.active);
+
+        return matchesSearch && matchesStockState;
+    });
+}
+
+function normalizeSearch(value: string): string {
+    return value.trim().toLocaleLowerCase('es-AR');
 }
 
 InventoryIndex.layout = {

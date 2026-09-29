@@ -68,6 +68,44 @@ test('builderbot service sends resolution photo as media url', function () {
     });
 });
 
+test('builderbot omits localhost photos that neighbors cannot access', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'app.builderbot.cloud/api/v2/bot-id/messages' => Http::response(['id' => 'message-local']),
+    ]);
+    builderBotConfig();
+
+    app(BuilderBotWhatsAppNotificationService::class)
+        ->sendComplaintMessage(complaintForWhatsApp(), ComplaintStatus::Resolved->value, [
+            'intervention_photo_url' => 'http://localhost:8000/storage/resuelto.jpg',
+        ]);
+
+    Http::assertSentCount(1);
+    Http::assertSent(fn (Request $request): bool => ! isset($request['messages']['mediaUrl'])
+        && ! str_contains($request['messages']['content'], '/storage/resuelto.jpg'));
+});
+
+test('builderbot uses the crew resolution message once', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'app.builderbot.cloud/api/v2/bot-id/messages' => Http::response(['id' => 'message-crew']),
+    ]);
+    builderBotConfig();
+
+    app(BuilderBotWhatsAppNotificationService::class)
+        ->sendComplaintMessage(complaintForWhatsApp(), ComplaintStatus::Resolved->value, [
+            'observation' => 'La luminaria quedó reparada y funcionando.',
+        ]);
+
+    Http::assertSent(function (Request $request): bool {
+        $message = $request['messages']['content'];
+
+        return substr_count($message, 'La luminaria quedó reparada y funcionando.') === 1
+            && ! str_contains($message, 'fue resuelto por la cuadrilla municipal')
+            && ! str_contains($message, 'Muchas gracias por colaborar');
+    });
+});
+
 test('builderbot service sends intervention photo as media url and text link', function () {
     Http::preventStrayRequests();
     Http::fake([

@@ -82,8 +82,89 @@ indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 index.form = indexForm
 
 /**
+* @see \App\Http\Controllers\Admin\InventoryQrMovementController::__invoke
+* @see app/Http/Controllers/Admin/InventoryQrMovementController.php:13
+* @route '/admin/inventario/movimiento-qr'
+*/
+export const qr_movement = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: qr_movement.url(options),
+    method: 'get',
+})
+
+qr_movement.definition = {
+    methods: ["get","head"],
+    url: '/admin/inventario/movimiento-qr',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Admin\InventoryQrMovementController::__invoke
+* @see app/Http/Controllers/Admin/InventoryQrMovementController.php:13
+* @route '/admin/inventario/movimiento-qr'
+*/
+qr_movement.url = (options?: RouteQueryOptions) => {
+    return qr_movement.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Admin\InventoryQrMovementController::__invoke
+* @see app/Http/Controllers/Admin/InventoryQrMovementController.php:13
+* @route '/admin/inventario/movimiento-qr'
+*/
+qr_movement.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: qr_movement.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Admin\InventoryQrMovementController::__invoke
+* @see app/Http/Controllers/Admin/InventoryQrMovementController.php:13
+* @route '/admin/inventario/movimiento-qr'
+*/
+qr_movement.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: qr_movement.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\Admin\InventoryQrMovementController::__invoke
+* @see app/Http/Controllers/Admin/InventoryQrMovementController.php:13
+* @route '/admin/inventario/movimiento-qr'
+*/
+const qr_movementForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: qr_movement.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Admin\InventoryQrMovementController::__invoke
+* @see app/Http/Controllers/Admin/InventoryQrMovementController.php:13
+* @route '/admin/inventario/movimiento-qr'
+*/
+qr_movementForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: qr_movement.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Admin\InventoryQrMovementController::__invoke
+* @see app/Http/Controllers/Admin/InventoryQrMovementController.php:13
+* @route '/admin/inventario/movimiento-qr'
+*/
+qr_movementForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: qr_movement.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+qr_movement.form = qr_movementForm
+
+/**
 * @see \App\Http\Controllers\Admin\InventoryController::create
-* @see app/Http/Controllers/Admin/InventoryController.php:69
+* @see app/Http/Controllers/Admin/InventoryController.php:70
 * @route '/admin/inventario/crear'
 */
 export const create = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -98,7 +179,7 @@ create.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::create
-* @see app/Http/Controllers/Admin/InventoryController.php:69
+* @see app/Http/Controllers/Admin/InventoryController.php:70
 * @route '/admin/inventario/crear'
 */
 create.url = (options?: RouteQueryOptions) => {
@@ -107,7 +188,7 @@ create.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::create
-* @see app/Http/Controllers/Admin/InventoryController.php:69
+* @see app/Http/Controllers/Admin/InventoryController.php:70
 * @route '/admin/inventario/crear'
 */
 create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -117,7 +198,7 @@ create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::create
-* @see app/Http/Controllers/Admin/InventoryController.php:69
+* @see app/Http/Controllers/Admin/InventoryController.php:70
 * @route '/admin/inventario/crear'
 */
 create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -127,7 +208,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::create
-* @see app/Http/Controllers/Admin/InventoryController.php:69
+* @see app/Http/Controllers/Admin/InventoryController.php:70
 * @route '/admin/inventario/crear'
 */
 const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -137,7 +218,7 @@ const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::create
-* @see app/Http/Controllers/Admin/InventoryController.php:69
+* @see app/Http/Controllers/Admin/InventoryController.php:70
 * @route '/admin/inventario/crear'
 */
 createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -147,7 +228,7 @@ createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::create
-* @see app/Http/Controllers/Admin/InventoryController.php:69
+* @see app/Http/Controllers/Admin/InventoryController.php:70
 * @route '/admin/inventario/crear'
 */
 createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -164,7 +245,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::store
-* @see app/Http/Controllers/Admin/InventoryController.php:88
+* @see app/Http/Controllers/Admin/InventoryController.php:89
 * @route '/admin/inventario'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -179,7 +260,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::store
-* @see app/Http/Controllers/Admin/InventoryController.php:88
+* @see app/Http/Controllers/Admin/InventoryController.php:89
 * @route '/admin/inventario'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -188,7 +269,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::store
-* @see app/Http/Controllers/Admin/InventoryController.php:88
+* @see app/Http/Controllers/Admin/InventoryController.php:89
 * @route '/admin/inventario'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -198,7 +279,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::store
-* @see app/Http/Controllers/Admin/InventoryController.php:88
+* @see app/Http/Controllers/Admin/InventoryController.php:89
 * @route '/admin/inventario'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -208,7 +289,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::store
-* @see app/Http/Controllers/Admin/InventoryController.php:88
+* @see app/Http/Controllers/Admin/InventoryController.php:89
 * @route '/admin/inventario'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -220,7 +301,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::show
-* @see app/Http/Controllers/Admin/InventoryController.php:116
+* @see app/Http/Controllers/Admin/InventoryController.php:117
 * @route '/admin/inventario/{inventoryItem}'
 */
 export const show = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -235,7 +316,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::show
-* @see app/Http/Controllers/Admin/InventoryController.php:116
+* @see app/Http/Controllers/Admin/InventoryController.php:117
 * @route '/admin/inventario/{inventoryItem}'
 */
 show.url = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -268,7 +349,7 @@ show.url = (args: { inventoryItem: number | { id: number } } | [inventoryItem: n
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::show
-* @see app/Http/Controllers/Admin/InventoryController.php:116
+* @see app/Http/Controllers/Admin/InventoryController.php:117
 * @route '/admin/inventario/{inventoryItem}'
 */
 show.get = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -278,7 +359,7 @@ show.get = (args: { inventoryItem: number | { id: number } } | [inventoryItem: n
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::show
-* @see app/Http/Controllers/Admin/InventoryController.php:116
+* @see app/Http/Controllers/Admin/InventoryController.php:117
 * @route '/admin/inventario/{inventoryItem}'
 */
 show.head = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -288,7 +369,7 @@ show.head = (args: { inventoryItem: number | { id: number } } | [inventoryItem: 
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::show
-* @see app/Http/Controllers/Admin/InventoryController.php:116
+* @see app/Http/Controllers/Admin/InventoryController.php:117
 * @route '/admin/inventario/{inventoryItem}'
 */
 const showForm = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -298,7 +379,7 @@ const showForm = (args: { inventoryItem: number | { id: number } } | [inventoryI
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::show
-* @see app/Http/Controllers/Admin/InventoryController.php:116
+* @see app/Http/Controllers/Admin/InventoryController.php:117
 * @route '/admin/inventario/{inventoryItem}'
 */
 showForm.get = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -308,7 +389,7 @@ showForm.get = (args: { inventoryItem: number | { id: number } } | [inventoryIte
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::show
-* @see app/Http/Controllers/Admin/InventoryController.php:116
+* @see app/Http/Controllers/Admin/InventoryController.php:117
 * @route '/admin/inventario/{inventoryItem}'
 */
 showForm.head = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -325,7 +406,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::edit
-* @see app/Http/Controllers/Admin/InventoryController.php:137
+* @see app/Http/Controllers/Admin/InventoryController.php:138
 * @route '/admin/inventario/{inventoryItem}/editar'
 */
 export const edit = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -340,7 +421,7 @@ edit.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::edit
-* @see app/Http/Controllers/Admin/InventoryController.php:137
+* @see app/Http/Controllers/Admin/InventoryController.php:138
 * @route '/admin/inventario/{inventoryItem}/editar'
 */
 edit.url = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -373,7 +454,7 @@ edit.url = (args: { inventoryItem: number | { id: number } } | [inventoryItem: n
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::edit
-* @see app/Http/Controllers/Admin/InventoryController.php:137
+* @see app/Http/Controllers/Admin/InventoryController.php:138
 * @route '/admin/inventario/{inventoryItem}/editar'
 */
 edit.get = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -383,7 +464,7 @@ edit.get = (args: { inventoryItem: number | { id: number } } | [inventoryItem: n
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::edit
-* @see app/Http/Controllers/Admin/InventoryController.php:137
+* @see app/Http/Controllers/Admin/InventoryController.php:138
 * @route '/admin/inventario/{inventoryItem}/editar'
 */
 edit.head = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -393,7 +474,7 @@ edit.head = (args: { inventoryItem: number | { id: number } } | [inventoryItem: 
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::edit
-* @see app/Http/Controllers/Admin/InventoryController.php:137
+* @see app/Http/Controllers/Admin/InventoryController.php:138
 * @route '/admin/inventario/{inventoryItem}/editar'
 */
 const editForm = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -403,7 +484,7 @@ const editForm = (args: { inventoryItem: number | { id: number } } | [inventoryI
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::edit
-* @see app/Http/Controllers/Admin/InventoryController.php:137
+* @see app/Http/Controllers/Admin/InventoryController.php:138
 * @route '/admin/inventario/{inventoryItem}/editar'
 */
 editForm.get = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -413,7 +494,7 @@ editForm.get = (args: { inventoryItem: number | { id: number } } | [inventoryIte
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::edit
-* @see app/Http/Controllers/Admin/InventoryController.php:137
+* @see app/Http/Controllers/Admin/InventoryController.php:138
 * @route '/admin/inventario/{inventoryItem}/editar'
 */
 editForm.head = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -430,7 +511,7 @@ edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::update
-* @see app/Http/Controllers/Admin/InventoryController.php:147
+* @see app/Http/Controllers/Admin/InventoryController.php:148
 * @route '/admin/inventario/{inventoryItem}'
 */
 export const update = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -445,7 +526,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::update
-* @see app/Http/Controllers/Admin/InventoryController.php:147
+* @see app/Http/Controllers/Admin/InventoryController.php:148
 * @route '/admin/inventario/{inventoryItem}'
 */
 update.url = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -478,7 +559,7 @@ update.url = (args: { inventoryItem: number | { id: number } } | [inventoryItem:
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::update
-* @see app/Http/Controllers/Admin/InventoryController.php:147
+* @see app/Http/Controllers/Admin/InventoryController.php:148
 * @route '/admin/inventario/{inventoryItem}'
 */
 update.patch = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -488,7 +569,7 @@ update.patch = (args: { inventoryItem: number | { id: number } } | [inventoryIte
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::update
-* @see app/Http/Controllers/Admin/InventoryController.php:147
+* @see app/Http/Controllers/Admin/InventoryController.php:148
 * @route '/admin/inventario/{inventoryItem}'
 */
 const updateForm = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -503,7 +584,7 @@ const updateForm = (args: { inventoryItem: number | { id: number } } | [inventor
 
 /**
 * @see \App\Http\Controllers\Admin\InventoryController::update
-* @see app/Http/Controllers/Admin/InventoryController.php:147
+* @see app/Http/Controllers/Admin/InventoryController.php:148
 * @route '/admin/inventario/{inventoryItem}'
 */
 updateForm.patch = (args: { inventoryItem: number | { id: number } } | [inventoryItem: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -520,6 +601,7 @@ update.form = updateForm
 
 const inventory = {
     index: Object.assign(index, index),
+    qr_movement: Object.assign(qr_movement, qr_movement),
     labels: Object.assign(labels, labels),
     create: Object.assign(create, create),
     store: Object.assign(store, store),

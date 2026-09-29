@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Crew;
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
 use App\Models\User;
@@ -52,7 +53,7 @@ test('qr screen shows a clear message when the item code does not exist', functi
         );
 });
 
-test('operative user can record an exit that leaves negative stock and backend audits the movement', function () {
+test('operative user can record a provisional withdrawal that leaves negative stock and backend audits the movement', function () {
     $crewUser = User::factory()->crewMember()->create();
     $item = InventoryItem::factory()->create([
         'code' => 'ALU-LUM-003',
@@ -78,14 +79,95 @@ test('operative user can record an exit that leaves negative stock and backend a
 
     expect($item->refresh()->current_stock)->toBe('-2.00')
         ->and($movement->user_id)->toBe($crewUser->id)
-        ->and($movement->movement_type)->toBe('exit')
+        ->and($movement->movement_type)->toBe('provisional_withdrawal')
         ->and($movement->quantity)->toBe('3.00')
         ->and($movement->stock_before)->toBe('1.00')
         ->and($movement->stock_after)->toBe('-2.00')
         ->and($movement->metadata['inventory_item_code'])->toBe('ALU-LUM-003')
+        ->and($movement->metadata['custody_user_id'])->toBe($crewUser->id)
         ->and($movement->metadata['reference'])->toBe('REC-2026-0001')
         ->and($movement->metadata['ip_address'])->toBe('10.0.0.25')
         ->and($movement->metadata['user_agent'])->toBe('Municipal QR Scanner');
+});
+
+test('operative user can return surplus from a pending withdrawal', function () {
+    $crewUser = User::factory()->crewMember()->create();
+    $item = InventoryItem::factory()->create([
+        'code' => 'ALU-LUM-005',
+        'qr_value' => 'ALU-LUM-005',
+        'current_stock' => 10,
+    ]);
+
+    $this->actingAs($crewUser)
+        ->post(route('inventory.qr.movements.store', ['code' => $item->code]), [
+            'movement_type' => 'exit',
+            'quantity' => 4,
+            'reason' => 'Retiro para recorrido',
+        ])
+        ->assertRedirect(route('inventory.qr.show', ['code' => $item->code]));
+
+    $withdrawal = InventoryMovement::query()
+        ->whereBelongsTo($item)
+        ->where('movement_type', 'provisional_withdrawal')
+        ->firstOrFail();
+
+    $this->actingAs($crewUser)
+        ->post(route('inventory.qr.returns.store', ['code' => $item->code]), [
+            'withdrawal_movement_id' => $withdrawal->id,
+            'quantity' => 2,
+            'reason' => 'Sobrante',
+        ])
+        ->assertRedirect(route('inventory.qr.show', ['code' => $item->code]));
+
+    $return = InventoryMovement::query()
+        ->whereBelongsTo($item)
+        ->where('movement_type', 'return_surplus')
+        ->firstOrFail();
+
+    expect($item->refresh()->current_stock)->toBe('8.00')
+        ->and($return->quantity)->toBe('2.00')
+        ->and($return->stock_before)->toBe('6.00')
+        ->and($return->stock_after)->toBe('8.00')
+        ->and($return->metadata['withdrawal_movement_id'])->toBe($withdrawal->id);
+});
+
+test('crew member can return surplus withdrawn by another member of the same crew', function () {
+    $crew = Crew::factory()->create();
+    $firstCrewMember = User::factory()->crewMember()->create([
+        'primary_crew_id' => $crew->id,
+    ]);
+    $secondCrewMember = User::factory()->crewMember()->create([
+        'primary_crew_id' => $crew->id,
+    ]);
+    $item = InventoryItem::factory()->create([
+        'code' => 'ALU-LUM-006',
+        'qr_value' => 'ALU-LUM-006',
+        'current_stock' => 8,
+    ]);
+
+    $this->actingAs($firstCrewMember)
+        ->post(route('inventory.qr.movements.store', ['code' => $item->code]), [
+            'movement_type' => 'exit',
+            'quantity' => 3,
+            'reason' => 'Retiro de cuadrilla',
+        ])
+        ->assertRedirect(route('inventory.qr.show', ['code' => $item->code]));
+
+    $withdrawal = InventoryMovement::query()
+        ->whereBelongsTo($item)
+        ->where('movement_type', 'provisional_withdrawal')
+        ->firstOrFail();
+
+    $this->actingAs($secondCrewMember)
+        ->post(route('inventory.qr.returns.store', ['code' => $item->code]), [
+            'withdrawal_movement_id' => $withdrawal->id,
+            'quantity' => 1,
+            'reason' => 'Sobrante de la cuadrilla',
+        ])
+        ->assertRedirect(route('inventory.qr.show', ['code' => $item->code]));
+
+    expect($item->refresh()->current_stock)->toBe('6.00')
+        ->and(InventoryMovement::query()->whereBelongsTo($item)->where('movement_type', 'return_surplus')->count())->toBe(1);
 });
 
 test('quick inventory movements reject decimal quantities', function () {

@@ -27,6 +27,7 @@ class StoreIntakeDepartmentRequest extends FormRequest
             'name' => ['required', 'string', 'max:160'],
             'slug' => ['required', 'alpha_dash', 'max:120', Rule::unique('intake_departments', 'slug')],
             'description' => ['nullable', 'string', 'max:500'],
+            'secretariat' => ['nullable', 'string', 'max:160'],
             'color' => ['required', 'string', 'max:20'],
             'active' => ['boolean'],
         ];

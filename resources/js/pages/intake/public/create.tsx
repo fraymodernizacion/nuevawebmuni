@@ -17,21 +17,56 @@ type IntakeType = {
     name: string;
     category: string;
     description: string;
+    cost_information?: string | null;
+    requirements: string[];
+    schema: SchemaField[];
+    subtypes: IntakeSubtype[];
+};
+
+type IntakeSubtype = {
+    id: number;
+    slug: string;
+    name: string;
+    description?: string | null;
+    cost_information?: string | null;
+    result_information?: string | null;
     requirements: string[];
     schema: SchemaField[];
 };
 
 export default function CreateIntakeRequest({ type }: { type: IntakeType }) {
+    const initialSubtypeId =
+        typeof window === 'undefined'
+            ? ''
+            : (new URLSearchParams(window.location.search).get('subtipo') ??
+              '');
     const { data, setData, post, processing, errors, progress } = useForm({
         applicant_name: '',
         applicant_dni: '',
         applicant_phone: '',
         applicant_email: '',
         applicant_address: '',
+        intake_request_subtype_id: type.subtypes.some(
+            (subtype) => subtype.id.toString() === initialSubtypeId,
+        )
+            ? initialSubtypeId
+            : '',
         summary: '',
         fields: {} as Record<string, string>,
         attachments: [] as File[],
     });
+    const selectedSubtype =
+        type.subtypes.find(
+            (subtype) =>
+                subtype.id.toString() === data.intake_request_subtype_id,
+        ) ?? null;
+    const displayedRequirements =
+        selectedSubtype?.requirements.length || type.requirements.length === 0
+            ? (selectedSubtype?.requirements ?? type.requirements)
+            : type.requirements;
+    const displayedSchema = selectedSubtype?.schema ?? type.schema;
+    const displayedCost =
+        selectedSubtype?.cost_information ?? type.cost_information;
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -66,13 +101,61 @@ export default function CreateIntakeRequest({ type }: { type: IntakeType }) {
                         <p className="text-sm text-zinc-600 dark:text-zinc-300">
                             {type.description}
                         </p>
+                        {displayedCost && (
+                            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                                Costo: {displayedCost}
+                            </p>
+                        )}
                     </header>
 
-                    {type.requirements.length > 0 && (
+                    {type.subtypes.length > 0 && (
+                        <Field
+                            label="Tramite especifico *"
+                            error={errors.intake_request_subtype_id}
+                        >
+                            <select
+                                className="input"
+                                value={data.intake_request_subtype_id}
+                                onChange={(event) => {
+                                    setData({
+                                        ...data,
+                                        intake_request_subtype_id:
+                                            event.target.value,
+                                        fields: {},
+                                    });
+                                }}
+                            >
+                                <option value="">Seleccionar</option>
+                                {type.subtypes.map((subtype) => (
+                                    <option
+                                        key={subtype.id}
+                                        value={subtype.id.toString()}
+                                    >
+                                        {subtype.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                    )}
+
+                    {selectedSubtype && (
+                        <section className="rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                            {selectedSubtype.description && (
+                                <p>{selectedSubtype.description}</p>
+                            )}
+                            {selectedSubtype.result_information && (
+                                <p className="mt-2 font-medium">
+                                    Resultado: {selectedSubtype.result_information}
+                                </p>
+                            )}
+                        </section>
+                    )}
+
+                    {displayedRequirements.length > 0 && (
                         <section className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-100">
                             <h2 className="font-semibold">Antes de iniciar</h2>
                             <ul className="mt-2 list-disc space-y-1 pl-5">
-                                {type.requirements.map((requirement) => (
+                                {displayedRequirements.map((requirement) => (
                                     <li key={requirement}>{requirement}</li>
                                 ))}
                             </ul>
@@ -160,16 +243,7 @@ export default function CreateIntakeRequest({ type }: { type: IntakeType }) {
                         <h2 className="text-lg font-semibold">
                             Datos de la solicitud
                         </h2>
-                        <Field label="Resumen" error={errors.summary}>
-                            <textarea
-                                className="input min-h-32"
-                                value={data.summary}
-                                onChange={(event) =>
-                                    setData('summary', event.target.value)
-                                }
-                            />
-                        </Field>
-                        {type.schema.map((field) => (
+                        {displayedSchema.map((field) => (
                             <Field
                                 key={field.name}
                                 label={`${field.label}${field.required ? ' *' : ''}`}

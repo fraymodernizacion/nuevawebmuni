@@ -17,6 +17,7 @@ import { index as crewWorkIndex } from '@/routes/crew/work';
 export default function CrewWorkIndex({
     zones,
     selectedZoneId,
+    selectedStatus,
     complaints,
     pendingMapComplaints,
     todayRoute,
@@ -42,6 +43,8 @@ export default function CrewWorkIndex({
         (total: number, zone: any) => total + zone.assigned_pending_count,
         0,
     );
+    const statusQuery = (status: string, zone = selectedZoneId) =>
+        crewWorkIndex.url({ query: { ...(zone ? { zone } : {}), status } });
 
     return (
         <>
@@ -66,20 +69,26 @@ export default function CrewWorkIndex({
                         <SummaryPill
                             label="Pendientes"
                             value={summary.pending}
+                            active={selectedStatus === 'pending'}
+                            href={statusQuery('pending')}
                         />
                         <SummaryPill
                             label="En relevamiento"
                             value={summary.in_progress}
+                            active={selectedStatus === 'in_progress'}
+                            href={statusQuery('in_progress')}
                         />
                         <SummaryPill
                             label="Resueltos hoy"
                             value={summary.resolved_today}
+                            active={selectedStatus === 'resolved_today'}
+                            href={statusQuery('resolved_today')}
                         />
                     </div>
                 </header>
                 <section className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                     <Link
-                        href={crewWorkIndex()}
+                        href={statusQuery(selectedStatus, null)}
                         className={`inline-flex min-h-11 shrink-0 items-center rounded-md border px-3 text-sm font-medium ${
                             selectedZoneId
                                 ? 'bg-card hover:bg-muted/50'
@@ -91,11 +100,7 @@ export default function CrewWorkIndex({
                     {zones.map((zone: any) => (
                         <Link
                             key={zone.id}
-                            href={crewWorkIndex({
-                                query: {
-                                    zone: zone.id,
-                                },
-                            })}
+                            href={statusQuery(selectedStatus, zone.id)}
                             className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium ${
                                 selectedZoneId === zone.id
                                     ? 'bg-primary text-primary-foreground'
@@ -198,15 +203,20 @@ export default function CrewWorkIndex({
                 {viewMode === 'map' && (
                     <PendingComplaintsMap
                         complaints={pendingMapComplaints}
-                        title="Trabajos pendientes en mapa"
+                        title={
+                            selectedStatus === 'resolved_today'
+                                ? 'Trabajos resueltos hoy en mapa'
+                                : selectedStatus === 'in_progress'
+                                  ? 'Trabajos en relevamiento en mapa'
+                                  : 'Trabajos pendientes en mapa'
+                        }
                     />
                 )}
                 {viewMode === 'list' && (
                     <section className="grid gap-3">
                         {complaints.length === 0 && (
                             <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-                                No hay trabajos pendientes para la zona
-                                seleccionada.
+                                No hay trabajos para el filtro seleccionado.
                             </div>
                         )}
                         {sortedComplaints.map((complaint: any) => (
@@ -349,12 +359,30 @@ export default function CrewWorkIndex({
     }
 }
 
-function SummaryPill({ label, value }: { label: string; value: number }) {
+function SummaryPill({
+    label,
+    value,
+    href,
+    active,
+}: {
+    label: string;
+    value: number;
+    href: string;
+    active: boolean;
+}) {
     return (
-        <div className="rounded-md bg-muted px-2 py-2">
+        <Link
+            href={href}
+            aria-current={active ? 'page' : undefined}
+            className={`rounded-md px-2 py-2 transition-colors ${active ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/70'}`}
+        >
             <p className="text-lg font-semibold tracking-normal">{value}</p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-        </div>
+            <p
+                className={`text-xs ${active ? 'text-primary-foreground' : 'text-muted-foreground'}`}
+            >
+                {label}
+            </p>
+        </Link>
     );
 }
 

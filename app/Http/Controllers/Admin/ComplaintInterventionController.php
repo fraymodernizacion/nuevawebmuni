@@ -11,6 +11,7 @@ use App\Models\Complaint;
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
 use App\Services\Complaints\ComplaintPhotoStorage;
+use App\Services\Inventory\PendingInventoryWithdrawals;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
@@ -18,7 +19,7 @@ use Illuminate\Validation\ValidationException;
 
 class ComplaintInterventionController extends Controller
 {
-    public function store(StoreComplaintInterventionRequest $request, Complaint $complaint, ComplaintPhotoStorage $photoStorage): RedirectResponse
+    public function store(StoreComplaintInterventionRequest $request, Complaint $complaint, ComplaintPhotoStorage $photoStorage, PendingInventoryWithdrawals $pendingWithdrawals): RedirectResponse
     {
         $validated = $request->validated();
         $status = ComplaintStatus::from($validated['status']);
@@ -31,13 +32,13 @@ class ComplaintInterventionController extends Controller
             ])
             ->values();
 
-        DB::transaction(function () use ($complaint, $validated, $status, $request, $photoStorage, $materials): void {
+        DB::transaction(function () use ($complaint, $validated, $status, $request, $photoStorage, $materials, $pendingWithdrawals): void {
             $materialItems = collect();
+            $materialAllocations = collect();
 
             if ($materials->isNotEmpty()) {
                 $materialItems = InventoryItem::query()
                     ->whereKey($materials->pluck('inventory_item_id'))
-                    ->lockForUpdate()
                     ->get()
                     ->keyBy('id');
 
@@ -50,11 +51,15 @@ class ComplaintInterventionController extends Controller
                         ]);
                     }
 
-                    if ((float) $inventoryItem->current_stock < $material['quantity']) {
+                    $allocations = $pendingWithdrawals->allocateForComplaint($inventoryItem, $material['quantity'], $complaint, $request->user());
+
+                    if ($allocations->isEmpty()) {
                         throw ValidationException::withMessages([
-                            'materials' => "No hay stock suficiente para {$inventoryItem->name}.",
+                            'materials' => "No hay material retirado pendiente suficiente para {$inventoryItem->name}.",
                         ]);
                     }
+
+                    $materialAllocations->put($inventoryItem->id, $allocations);
                 }
             }
 
@@ -73,12 +78,8 @@ class ComplaintInterventionController extends Controller
 
             foreach ($materials as $material) {
                 $inventoryItem = $materialItems->get($material['inventory_item_id']);
-                $stockBefore = (float) $inventoryItem->current_stock;
-                $stockAfter = round($stockBefore - $material['quantity'], 2);
-
-                $inventoryItem->update([
-                    'current_stock' => $stockAfter,
-                ]);
+                $stockBefore = round((float) $inventoryItem->current_stock, 2);
+                $allocations = $materialAllocations->get($inventoryItem->id, collect());
 
                 $intervention->materials()->create([
                     'inventory_item_id' => $inventoryItem->id,
@@ -90,20 +91,24 @@ class ComplaintInterventionController extends Controller
                     'unit' => $inventoryItem->unit,
                 ]);
 
-                InventoryMovement::create([
-                    'inventory_item_id' => $inventoryItem->id,
-                    'complaint_intervention_id' => $intervention->id,
-                    'user_id' => $request->user()->id,
-                    'movement_type' => 'exit',
-                    'quantity' => $material['quantity'],
-                    'stock_before' => $stockBefore,
-                    'stock_after' => $stockAfter,
-                    'description' => "Salida por reclamo {$complaint->public_code}",
-                    'metadata' => [
-                        'complaint_id' => $complaint->id,
-                        'complaint_public_code' => $complaint->public_code,
-                    ],
-                ]);
+                foreach ($allocations as $allocation) {
+                    InventoryMovement::create([
+                        'inventory_item_id' => $inventoryItem->id,
+                        'complaint_intervention_id' => $intervention->id,
+                        'user_id' => $request->user()->id,
+                        'movement_type' => 'complaint_consumption',
+                        'quantity' => $allocation['quantity'],
+                        'stock_before' => $stockBefore,
+                        'stock_after' => $stockBefore,
+                        'description' => "Consumo en reclamo {$complaint->public_code}",
+                        'metadata' => [
+                            'complaint_id' => $complaint->id,
+                            'complaint_public_code' => $complaint->public_code,
+                            'withdrawal_movement_id' => $allocation['movement']->id,
+                            'source' => 'complaint_intervention',
+                        ],
+                    ]);
+                }
             }
 
             $oldStatus = $complaint->current_status;

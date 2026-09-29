@@ -14,6 +14,7 @@ type Department = {
     slug: string;
     name: string;
     description?: string | null;
+    secretariat?: string | null;
     color: string;
     active: boolean;
     users_count: number;
@@ -110,6 +111,7 @@ function CreateDepartmentForm() {
         name: '',
         slug: '',
         description: '',
+        secretariat: '',
         color: '#2563eb',
         active: true,
     });
@@ -139,6 +141,7 @@ function DepartmentForm({ department }: { department: Department }) {
         name: department.name,
         slug: department.slug,
         description: department.description ?? '',
+        secretariat: department.secretariat ?? '',
         color: department.color,
         active: department.active,
     });
@@ -159,6 +162,7 @@ function DepartmentForm({ department }: { department: Department }) {
                 <div>
                     <h3 className="font-semibold">{department.name}</h3>
                     <p className="text-xs text-muted-foreground">
+                        {department.secretariat ?? 'Sin secretaria'} ·{' '}
                         {department.users_count} encargado/s ·{' '}
                         {department.derivations_count} derivacion/es
                     </p>
@@ -282,6 +286,16 @@ function DepartmentFields({ form }: { form: ReturnType<typeof useForm<any>> }) {
                     onChange={(event) =>
                         form.setData('color', event.target.value)
                     }
+                />
+            </Field>
+            <Field label="Secretaria" error={form.errors.secretariat}>
+                <input
+                    className="input"
+                    value={form.data.secretariat}
+                    onChange={(event) =>
+                        form.setData('secretariat', event.target.value)
+                    }
+                    placeholder="Gobierno"
                 />
             </Field>
             <label className="flex items-center gap-2 self-end rounded-md border bg-background px-3 py-2 text-sm font-medium">

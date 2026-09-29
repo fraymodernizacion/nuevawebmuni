@@ -5,6 +5,7 @@ import {
     PackageCheck,
     PackageSearch,
     Recycle,
+    RotateCcw,
     ShieldCheck,
     TriangleAlert,
 } from 'lucide-react';
@@ -30,11 +31,25 @@ type InventoryItem = {
     low_stock: boolean;
     quick_url: string;
     movement_store_url: string;
+    return_store_url: string;
+};
+
+type PendingReturn = {
+    id: number;
+    withdrawn_quantity: number;
+    used_quantity: number;
+    returned_quantity: number;
+    pending_quantity: number;
+    reference: string | null;
+    reason: string | null;
+    created_at: string | null;
+    return_url: string;
 };
 
 type Props = {
     code: string;
     item: InventoryItem | null;
+    pendingReturns: PendingReturn[];
     permissions: {
         can_exit: boolean;
         can_entry: boolean;
@@ -45,8 +60,9 @@ type Props = {
 const movementOptions = [
     {
         value: 'exit',
-        label: 'Salida',
-        description: 'Material que se retira para usar en campo.',
+        label: 'Salida provisoria',
+        description:
+            'Material que sale del deposito y queda pendiente de rendir.',
         icon: ArrowDownCircle,
         color: 'border-red-200 bg-red-50 text-red-950',
         selected: 'border-red-500 bg-red-100 ring-red-200',
@@ -72,7 +88,12 @@ const movementOptions = [
     },
 ] as const;
 
-export default function InventoryQuickShow({ code, item, permissions }: Props) {
+export default function InventoryQuickShow({
+    code,
+    item,
+    pendingReturns,
+    permissions,
+}: Props) {
     const firstAllowedMovement =
         movementOptions.find((option) => permissions[option.permission])
             ?.value ?? 'exit';
@@ -331,9 +352,130 @@ export default function InventoryQuickShow({ code, item, permissions }: Props) {
                                 : 'Confirmar movimiento'}
                         </Button>
                     </form>
+
+                    <section className="rounded-[2rem] bg-white p-5 text-slate-950 shadow-2xl">
+                        <div className="flex items-start gap-3">
+                            <div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-slate-100">
+                                <RotateCcw className="size-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-black tracking-tight">
+                                    Pendiente de rendir
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-600">
+                                    Material retirado que todavia no fue usado
+                                    en un reclamo ni devuelto al deposito.
+                                </p>
+                            </div>
+                        </div>
+
+                        {pendingReturns.length > 0 ? (
+                            <div className="mt-4 grid gap-3">
+                                {pendingReturns.map((pendingReturn) => (
+                                    <PendingReturnCard
+                                        key={pendingReturn.id}
+                                        pendingReturn={pendingReturn}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="mt-4 rounded-2xl bg-slate-100 p-4 text-sm text-slate-600">
+                                No tenes salidas provisorias pendientes para
+                                este insumo.
+                            </p>
+                        )}
+                    </section>
                 </section>
             </main>
         </>
+    );
+}
+
+function PendingReturnCard({
+    pendingReturn,
+}: {
+    pendingReturn: PendingReturn;
+}) {
+    const form = useForm({
+        withdrawal_movement_id: pendingReturn.id,
+        quantity: Math.trunc(pendingReturn.pending_quantity).toString(),
+        reason: '',
+    });
+
+    function submit(event: FormEvent) {
+        event.preventDefault();
+
+        form.post(pendingReturn.return_url, {
+            preserveScroll: true,
+        });
+    }
+
+    return (
+        <form
+            onSubmit={submit}
+            className="grid gap-3 rounded-2xl border border-slate-200 p-4"
+        >
+            <div className="grid grid-cols-3 gap-2">
+                <Metric
+                    label="Retirado"
+                    value={formatNumber(pendingReturn.withdrawn_quantity)}
+                />
+                <Metric
+                    label="Usado"
+                    value={formatNumber(pendingReturn.used_quantity)}
+                />
+                <Metric
+                    label="Pendiente"
+                    value={formatNumber(pendingReturn.pending_quantity)}
+                />
+            </div>
+
+            {(pendingReturn.reference || pendingReturn.reason) && (
+                <p className="text-sm text-slate-600">
+                    {[pendingReturn.reference, pendingReturn.reason]
+                        .filter(Boolean)
+                        .join(' · ')}
+                </p>
+            )}
+
+            <div className="grid gap-2">
+                <Label>Cantidad a devolver</Label>
+                <Input
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={form.data.quantity}
+                    onChange={(event) =>
+                        form.setData(
+                            'quantity',
+                            event.target.value.replace(/\D/g, ''),
+                        )
+                    }
+                />
+                <InputError message={form.errors.quantity} />
+            </div>
+
+            <div className="grid gap-2">
+                <Label>Motivo opcional</Label>
+                <Input
+                    value={form.data.reason}
+                    onChange={(event) =>
+                        form.setData('reason', event.target.value)
+                    }
+                    placeholder="Ej: sobrante de recorrido"
+                />
+                <InputError message={form.errors.reason} />
+            </div>
+
+            <Button
+                type="submit"
+                variant="outline"
+                className="min-h-12 rounded-2xl font-black"
+                disabled={form.processing}
+            >
+                <RotateCcw className="size-4" />
+                {form.processing ? 'Registrando...' : 'Devolver sobrante'}
+            </Button>
+        </form>
     );
 }
 
@@ -346,4 +488,10 @@ function Metric({ label, value }: { label: string; value: string }) {
             <p className="mt-1 text-2xl font-black">{value}</p>
         </div>
     );
+}
+
+function formatNumber(value: number): string {
+    return value.toLocaleString('es-AR', {
+        maximumFractionDigits: 0,
+    });
 }

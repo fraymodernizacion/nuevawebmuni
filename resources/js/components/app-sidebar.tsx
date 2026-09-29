@@ -4,7 +4,6 @@ import {
     Cog,
     Inbox,
     LayoutGrid,
-    Map,
     Package2,
     RadioTower,
     Users,
@@ -27,7 +26,6 @@ import {
     dashboard as complaintsDashboard,
     index as complaintsIndex,
 } from '@/routes/admin/complaints';
-import { planning } from '@/routes/admin/complaints';
 import {
     configuration as intakeConfiguration,
     index as intakeIndex,
@@ -37,6 +35,7 @@ import { index as usersIndex } from '@/routes/admin/users';
 import { index as crewWorkIndex } from '@/routes/crew/work';
 import { index as intakeDepartmentIndex } from '@/routes/intake/department';
 import type { NavItem } from '@/types';
+import type { Auth } from '@/types/auth';
 
 const mainNavItems: NavItem[] = [
     {
@@ -70,11 +69,6 @@ const mainNavItems: NavItem[] = [
         icon: Users,
     },
     {
-        title: 'Planificación',
-        href: planning(),
-        icon: Map,
-    },
-    {
         title: 'Mis trabajos',
         href: crewWorkIndex(),
         icon: Wrench,
@@ -87,18 +81,11 @@ const mainNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
-    const features = usePage().props.features as
-        { routePlanning?: boolean } | undefined;
+    const { auth } = usePage<{ auth: Auth }>().props;
     const canUseComplaintManagement =
         canUseModule(auth.user, 'complaints_management') ||
         auth.user?.role === 'admin' ||
         auth.user?.role === 'operator';
-    const canPlanRoutes =
-        Boolean(features?.routePlanning) &&
-        (canUseModule(auth.user, 'route_planning') ||
-            auth.user?.role === 'admin' ||
-            auth.user?.role === 'crew');
     const canViewCrewWork =
         canUseModule(auth.user, 'crew_work') ||
         canUseModule(auth.user, 'complaint_operations') ||
@@ -128,7 +115,6 @@ export function AppSidebar() {
                 canConfigureIntakeDerivations) &&
             (item.title !== 'Inventario' || canManageInventory) &&
             (item.title !== 'Usuarios' || canManageUsers) &&
-            (item.title !== 'Planificacion' || canPlanRoutes) &&
             (item.title !== 'Mis trabajos' || canViewCrewWork) &&
             (item.title !== 'Mis derivaciones' || canViewIntakeDerivations),
     );

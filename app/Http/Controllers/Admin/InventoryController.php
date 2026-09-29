@@ -57,6 +57,7 @@ class InventoryController extends Controller
             'items' => $items,
             'filters' => $request->only(['search', 'stock_state']),
             'labelBatchUrl' => route('admin.inventory.labels.index'),
+            'qrMovementUrl' => route('admin.inventory.qr_movement'),
             'summary' => $summary,
             'stockStates' => [
                 ['value' => 'all', 'label' => 'Todos'],

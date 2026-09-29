@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateIntakeDerivationRequest;
 use App\Models\IntakeDerivation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,6 +44,7 @@ class IntakeDepartmentWorkController extends Controller
         $intakeDerivation->load([
             'department:id,name,color',
             'assistanceType:id,name,color',
+            'histories.user:id,name',
             'request.type',
             'request.attachments',
             'request.histories.user:id,name',
@@ -59,6 +61,7 @@ class IntakeDepartmentWorkController extends Controller
                 'updated_at' => $intakeDerivation->updated_at?->format('d/m/Y H:i'),
                 'department' => $intakeDerivation->department,
                 'assistance_type' => $intakeDerivation->assistanceType,
+                'histories' => $this->historyPayload($intakeDerivation),
                 'request' => [
                     ...$intakeDerivation->request->toArray(),
                     'status_label' => $intakeDerivation->request->status->label(),
@@ -69,6 +72,17 @@ class IntakeDepartmentWorkController extends Controller
                         'type' => $attachment->type,
                         'created_at' => $attachment->created_at?->format('d/m/Y H:i'),
                     ]),
+                    'histories' => $intakeDerivation->request->histories->map(fn ($history): array => [
+                        'id' => $history->id,
+                        'action' => $history->action,
+                        'from_status' => $history->from_status?->value,
+                        'to_status' => $history->to_status?->value,
+                        'status_label' => $history->to_status?->label(),
+                        'public_comment' => $history->public_comment,
+                        'internal_comment' => $history->internal_comment,
+                        'changed_at' => $history->changed_at?->toJSON(),
+                        'user' => $history->user ? ['name' => $history->user->name] : null,
+                    ])->values(),
                 ],
             ],
             'statuses' => IntakeDerivationStatus::options(),
@@ -81,14 +95,29 @@ class IntakeDepartmentWorkController extends Controller
 
         $validated = $request->validated();
         $status = IntakeDerivationStatus::from($validated['status']);
+        $previousStatus = $intakeDerivation->status;
+        $previousResponse = $intakeDerivation->department_response;
+        $newResponse = $validated['department_response'] ?? null;
 
         $intakeDerivation->update([
             'status' => $status,
-            'department_response' => $validated['department_response'] ?? null,
+            'department_response' => $newResponse,
             'last_updated_by' => $request->user()?->id,
             'accepted_at' => $status === IntakeDerivationStatus::Accepted ? now() : $intakeDerivation->accepted_at,
             'completed_at' => in_array($status, [IntakeDerivationStatus::Completed, IntakeDerivationStatus::NotApplicable], true) ? now() : $intakeDerivation->completed_at,
         ]);
+
+        if ($previousStatus !== $status || $previousResponse !== $newResponse) {
+            $intakeDerivation->histories()->create([
+                'user_id' => $request->user()?->id,
+                'from_status' => $previousStatus,
+                'to_status' => $status,
+                'action' => 'area_response_updated',
+                'previous_response' => $previousResponse,
+                'new_response' => $newResponse,
+                'changed_at' => now(),
+            ]);
+        }
 
         return back()->with('success', 'Derivacion actualizada.');
     }
@@ -100,5 +129,27 @@ class IntakeDepartmentWorkController extends Controller
         }
 
         return $request->user()?->intake_department_id === $intakeDerivation->intake_department_id;
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function historyPayload(IntakeDerivation $intakeDerivation): Collection
+    {
+        return $intakeDerivation->histories
+            ->sortByDesc('changed_at')
+            ->map(fn ($history): array => [
+                'id' => $history->id,
+                'action' => $history->action,
+                'from_status' => $history->from_status?->value,
+                'to_status' => $history->to_status?->value,
+                'from_status_label' => $history->from_status?->label(),
+                'to_status_label' => $history->to_status?->label(),
+                'previous_response' => $history->previous_response,
+                'new_response' => $history->new_response,
+                'changed_at' => $history->changed_at?->toJSON(),
+                'user' => $history->user ? ['name' => $history->user->name] : null,
+            ])
+            ->values();
     }
 }

@@ -26,9 +26,13 @@ import {
     statusBadgeClass,
     statusLabel,
 } from '@/lib/complaint-labels';
+import { prepareComplaintPhoto } from '@/lib/prepare-complaint-photo';
 
 type DictationField =
-    'observations' | 'internal_supplies_notes' | 'second_visit_reason';
+    | 'citizen_message'
+    | 'observations'
+    | 'internal_supplies_notes'
+    | 'second_visit_reason';
 
 type ResponseOption = {
     code: string;
@@ -99,11 +103,16 @@ export default function CrewComplaintShow({
     const [activeDictationField, setActiveDictationField] =
         useState<DictationField | null>(null);
     const [dictationError, setDictationError] = useState('');
+    const [pendingPhotoPreparations, setPendingPhotoPreparations] = useState(0);
+    const photoSelectionVersion = useRef(0);
+    const photosRef = useRef<File[]>(form.data.photos);
+    const preparingPhotos = pendingPhotoPreparations > 0;
     const photoPreviewUrls = useMemo(
         () => form.data.photos.map((photo) => URL.createObjectURL(photo)),
         [form.data.photos],
     );
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+    const submittedRef = useRef(false);
 
     useEffect(() => {
         const savedForm = window.localStorage.getItem(formStorageKey);
@@ -126,6 +135,10 @@ export default function CrewComplaintShow({
     }, []);
 
     useEffect(() => {
+        if (submittedRef.current) {
+            return;
+        }
+
         window.localStorage.setItem(
             formStorageKey,
             JSON.stringify({
@@ -154,25 +167,61 @@ export default function CrewComplaintShow({
 
     function submit(event: FormEvent) {
         event.preventDefault();
+
+        if (preparingPhotos) {
+            return;
+        }
+
         form.post(intervene.url(complaint.id), {
             forceFormData: true,
-            onSuccess: () => window.localStorage.removeItem(formStorageKey),
+            onSuccess: () => {
+                submittedRef.current = true;
+                window.localStorage.removeItem(formStorageKey);
+                photosRef.current = [];
+                form.reset();
+            },
         });
     }
 
     function replacePhotos(files: File[]) {
+        photoSelectionVersion.current += 1;
+        photosRef.current = files;
         form.setData('photos', files);
     }
 
-    function appendPhotos(files: File[]) {
-        form.setData('photos', [...form.data.photos, ...files]);
+    async function preparePhotos(files: File[], append: boolean) {
+        if (files.length === 0) {
+            return;
+        }
+
+        const selectionVersion = append
+            ? photoSelectionVersion.current
+            : ++photoSelectionVersion.current;
+        setPendingPhotoPreparations((count) => count + 1);
+
+        try {
+            const prepared = await Promise.all(
+                files.map(prepareComplaintPhoto),
+            );
+
+            if (selectionVersion === photoSelectionVersion.current) {
+                const nextPhotos = append
+                    ? [...photosRef.current, ...prepared]
+                    : prepared;
+                photosRef.current = nextPhotos;
+                form.setData('photos', nextPhotos);
+            }
+        } finally {
+            setPendingPhotoPreparations((count) => count - 1);
+        }
     }
 
     function removePhoto(indexToRemove: number) {
-        form.setData(
-            'photos',
-            form.data.photos.filter((_, index) => index !== indexToRemove),
+        const nextPhotos = photosRef.current.filter(
+            (_, index) => index !== indexToRemove,
         );
+        photosRef.current = nextPhotos;
+        form.setData('photos', nextPhotos);
     }
 
     function clearPhotoInputs() {
@@ -400,14 +449,18 @@ export default function CrewComplaintShow({
                                 help="Este mensaje podra ser enviado al vecino."
                                 error={form.errors.citizen_message}
                             >
-                                <textarea
-                                    className="input min-h-36"
+                                <DictationTextarea
+                                    active={
+                                        activeDictationField ===
+                                        'citizen_message'
+                                    }
+                                    className="min-h-36"
                                     value={form.data.citizen_message}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'citizen_message',
-                                            event.target.value,
-                                        )
+                                    onChange={(value) =>
+                                        form.setData('citizen_message', value)
+                                    }
+                                    onDictate={() =>
+                                        toggleDictation('citizen_message')
                                     }
                                     placeholder="Selecciona una respuesta o escribi el mensaje que recibira el vecino."
                                 />
@@ -525,12 +578,14 @@ export default function CrewComplaintShow({
                                             type="file"
                                             multiple
                                             accept="image/*"
+                                            disabled={preparingPhotos}
                                             onChange={(event) => {
-                                                replacePhotos(
+                                                void preparePhotos(
                                                     Array.from(
                                                         event.target.files ??
                                                             [],
                                                     ),
+                                                    false,
                                                 );
                                                 clearPhotoInputs();
                                             }}
@@ -545,12 +600,14 @@ export default function CrewComplaintShow({
                                             type="file"
                                             accept="image/*"
                                             capture="environment"
+                                            disabled={preparingPhotos}
                                             onChange={(event) => {
-                                                appendPhotos(
+                                                void preparePhotos(
                                                     Array.from(
                                                         event.target.files ??
                                                             [],
                                                     ),
+                                                    true,
                                                 );
                                                 clearPhotoInputs();
                                             }}
@@ -631,13 +688,17 @@ export default function CrewComplaintShow({
                             />
 
                             <button
-                                disabled={form.processing}
+                                disabled={form.processing || preparingPhotos}
                                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <MessageCircle className="size-4" />
-                                {form.processing
-                                    ? 'Guardando...'
-                                    : 'Guardar intervencion'}
+                                {preparingPhotos
+                                    ? 'Preparando fotos...'
+                                    : form.processing
+                                      ? form.progress
+                                          ? `Subiendo fotos ${form.progress.percentage}%`
+                                          : 'Guardando...'
+                                      : 'Guardar intervencion'}
                             </button>
                         </form>
                     )}
@@ -725,6 +786,23 @@ export default function CrewComplaintShow({
     }
 
     function selectResponse(option: ResponseOption) {
+        if (form.data.response_code === option.code) {
+            form.setData({
+                ...form.data,
+                response_code: '',
+                citizen_message:
+                    form.data.citizen_message === option.message
+                        ? ''
+                        : form.data.citizen_message,
+                send_whatsapp:
+                    form.data.citizen_message === option.message
+                        ? false
+                        : form.data.send_whatsapp,
+            });
+
+            return;
+        }
+
         form.setData({
             ...form.data,
             status: option.suggested_status,
@@ -858,12 +936,14 @@ function DictationTextarea({
     className = '',
     onChange,
     onDictate,
+    placeholder,
     value,
 }: {
     active: boolean;
     className?: string;
     onChange: (value: string) => void;
     onDictate: () => void;
+    placeholder?: string;
     value: string;
 }) {
     return (
@@ -890,6 +970,7 @@ function DictationTextarea({
                 className={`input ${className}`}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
+                placeholder={placeholder}
             />
         </div>
     );

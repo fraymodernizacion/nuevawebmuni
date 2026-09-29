@@ -1,3 +1,8 @@
+import { BrowserQRCodeReader } from '@zxing/browser';
+import type { IScannerControls } from '@zxing/browser';
+import { Plus, QrCode, ScanLine, Search, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import {
     Dialog,
     DialogContent,
@@ -5,8 +10,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, QrCode, ScanLine, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
 
 type InventoryItem = {
     id: number;
@@ -15,22 +18,16 @@ type InventoryItem = {
     unit: string;
     current_stock: number | string;
     minimum_stock: number | string;
+    withdrawn_quantity: number | string;
+    used_quantity: number | string;
+    returned_quantity: number | string;
+    pending_quantity: number | string;
 };
 
 export type ComplaintMaterialInput = {
     inventory_item_id: number;
     quantity: number;
 };
-
-type ScannerLike = {
-    detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue: string }>>;
-};
-
-declare global {
-    interface Window {
-        BarcodeDetector?: new () => ScannerLike;
-    }
-}
 
 export function ComplaintMaterialsPicker({
     inventoryItems,
@@ -41,11 +38,20 @@ export function ComplaintMaterialsPicker({
     materials: ComplaintMaterialInput[];
     onChange: (materials: ComplaintMaterialInput[]) => void;
 }) {
-    const [code, setCode] = useState('');
-    const [quantity, setQuantity] = useState('1');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [quantityDraft, setQuantityDraft] = useState('1');
     const [error, setError] = useState('');
     const [scannerOpen, setScannerOpen] = useState(false);
-    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const [scannerStatus, setScannerStatus] = useState('');
+    const [quantityItem, setQuantityItem] = useState<InventoryItem | null>(
+        null,
+    );
+    const [scannerVideo, setScannerVideo] = useState<HTMLVideoElement | null>(
+        null,
+    );
+    const scannerControlsRef = useRef<IScannerControls | null>(null);
+    const scannerStreamRef = useRef<MediaStream | null>(null);
+    const qrPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
     const selectedMaterials = useMemo(
         () =>
@@ -62,56 +68,62 @@ export function ComplaintMaterialsPicker({
         [inventoryItems, materials],
     );
 
-    const matchedItem = useMemo(
-        () =>
-            inventoryItems.find(
-                (item) => item.code.toLowerCase() === code.trim().toLowerCase(),
-            ) ?? null,
-        [code, inventoryItems],
+    const searchResults = useMemo(
+        () => searchInventoryItems(inventoryItems, searchQuery),
+        [inventoryItems, searchQuery],
     );
 
-    function addMaterialByItem(item: InventoryItem, requestedQuantity: number) {
-        if (requestedQuantity <= 0) {
-            setError('La cantidad debe ser mayor a cero.');
+    const addMaterialByItem = useCallback(
+        (item: InventoryItem, requestedQuantity: number) => {
+            if (requestedQuantity <= 0) {
+                setError('La cantidad debe ser mayor a cero.');
 
-            return;
-        }
+                return;
+            }
 
-        const nextMaterials = [...materials];
-        const existingIndex = nextMaterials.findIndex(
-            (material) => material.inventory_item_id === item.id,
-        );
+            if (requestedQuantity > Number(item.pending_quantity)) {
+                setError(
+                    `Solo hay ${formatNumber(item.pending_quantity)} ${item.unit} pendiente de rendir para este insumo.`,
+                );
 
-        if (existingIndex >= 0) {
-            nextMaterials[existingIndex] = {
-                ...nextMaterials[existingIndex],
-                quantity: roundQuantity(
+                return;
+            }
+
+            const nextMaterials = [...materials];
+            const existingIndex = nextMaterials.findIndex(
+                (material) => material.inventory_item_id === item.id,
+            );
+
+            if (existingIndex >= 0) {
+                const nextQuantity = roundQuantity(
                     nextMaterials[existingIndex].quantity + requestedQuantity,
-                ),
-            };
-        } else {
-            nextMaterials.push({
-                inventory_item_id: item.id,
-                quantity: roundQuantity(requestedQuantity),
-            });
-        }
+                );
 
-        onChange(nextMaterials);
-        setCode(item.code);
-        setError('');
-    }
+                if (nextQuantity > Number(item.pending_quantity)) {
+                    setError(
+                        `Solo hay ${formatNumber(item.pending_quantity)} ${item.unit} pendiente de rendir para este insumo.`,
+                    );
 
-    function addMaterialByCode() {
-        const item = matchedItem;
+                    return;
+                }
 
-        if (!item) {
-            setError('No encontramos ese codigo en el inventario.');
+                nextMaterials[existingIndex] = {
+                    ...nextMaterials[existingIndex],
+                    quantity: nextQuantity,
+                };
+            } else {
+                nextMaterials.push({
+                    inventory_item_id: item.id,
+                    quantity: roundQuantity(requestedQuantity),
+                });
+            }
 
-            return;
-        }
-
-        addMaterialByItem(item, parseQuantity(quantity));
-    }
+            onChange(nextMaterials);
+            setSearchQuery('');
+            setError('');
+        },
+        [materials, onChange],
+    );
 
     function removeMaterial(inventoryItemId: number) {
         onChange(
@@ -121,98 +133,195 @@ export function ComplaintMaterialsPicker({
         );
     }
 
-    function handleScannedCode(rawCode: string) {
-        const scannedItem = inventoryItems.find(
-            (item) => item.code.toLowerCase() === rawCode.toLowerCase(),
-        );
+    const openQuantityDialog = useCallback((item: InventoryItem) => {
+        setError('');
+        setQuantityDraft('1');
+        setQuantityItem(item);
+    }, []);
 
-        if (!scannedItem) {
-            setError(`El QR ${rawCode} no coincide con un insumo cargado.`);
+    function addSelectedQuantity() {
+        if (!quantityItem) {
             return;
         }
 
-        addMaterialByItem(scannedItem, parseQuantity(quantity));
-        setScannerOpen(false);
+        const parsedQuantity = parseQuantity(quantityDraft);
+
+        if (parsedQuantity <= 0) {
+            setError('La cantidad debe ser mayor a cero.');
+
+            return;
+        }
+
+        addMaterialByItem(quantityItem, parsedQuantity);
+        setQuantityItem(null);
+    }
+
+    const handleScannedCode = useCallback(
+        (rawCode: string) => {
+            const normalizedCode = normalizeScannedCode(rawCode);
+            const scannedItem = inventoryItems.find((item) =>
+                codesMatch(item.code, normalizedCode),
+            );
+
+            if (!scannedItem) {
+                setError(
+                    `El QR ${normalizedCode} no coincide con un insumo cargado.`,
+                );
+
+                return;
+            }
+
+            if (Number(scannedItem.pending_quantity) <= 0) {
+                setError(
+                    `El QR ${normalizedCode} corresponde a ${scannedItem.name}, pero no tiene cantidad retirada pendiente de rendir para este reclamo.`,
+                );
+                setSearchQuery(scannedItem.code);
+
+                return;
+            }
+
+            setScannerOpen(false);
+            setScannerStatus('');
+            openQuantityDialog(scannedItem);
+            setSearchQuery(scannedItem.code);
+        },
+        [inventoryItems, openQuantityDialog],
+    );
+
+    function openScanner() {
+        if (!isCameraSupported() || !isLocalOrSecureContext()) {
+            setError(
+                'El visor en vivo no está disponible aquí. Tomá una foto del QR para leerlo.',
+            );
+            qrPhotoInputRef.current?.click();
+
+            return;
+        }
+
+        setError('');
+        setScannerStatus('Abriendo camara...');
+        setScannerOpen(true);
+    }
+
+    async function scanQrPhoto(file: File | undefined) {
+        if (!file) {
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        setError('');
+
+        try {
+            const result = await new BrowserQRCodeReader().decodeFromImageUrl(
+                objectUrl,
+            );
+            handleScannedCode(result.getText());
+        } catch {
+            setError(
+                'No pudimos leer el QR de la foto. Acercá la cámara y volvé a intentar.',
+            );
+        } finally {
+            URL.revokeObjectURL(objectUrl);
+
+            if (qrPhotoInputRef.current) {
+                qrPhotoInputRef.current.value = '';
+            }
+        }
     }
 
     useEffect(() => {
         if (!scannerOpen) {
+            scannerControlsRef.current?.stop();
+            scannerControlsRef.current = null;
+            stopScannerStream(scannerStreamRef.current);
+            scannerStreamRef.current = null;
+
             return;
         }
 
-        const BarcodeDetector = window.BarcodeDetector;
-        const video = videoRef.current;
+        const video = scannerVideo;
         let active = true;
-        let stream: MediaStream | null = null;
-        let intervalId: number | null = null;
+        const codeReader = new BrowserQRCodeReader(undefined, {
+            delayBetweenScanAttempts: 350,
+        });
 
-        if (
-            !BarcodeDetector ||
-            !navigator.mediaDevices?.getUserMedia ||
-            !video
-        ) {
-            setError(
-                'Este navegador no soporta lectura QR con camara. Proba con Chrome en Android.',
-            );
+        if (!isCameraSupported()) {
             return () => {
                 active = false;
             };
         }
 
-        const detector = new BarcodeDetector();
+        if (!video) {
+            return () => {
+                active = false;
+            };
+        }
 
-        navigator.mediaDevices
-            .getUserMedia({
-                video: {
-                    facingMode: 'environment',
-                },
-            })
-            .then(async (mediaStream) => {
-                if (!active || !videoRef.current) {
-                    mediaStream.getTracks().forEach((track) => track.stop());
+        openCameraStream()
+            .then(async (stream) => {
+                if (!active) {
+                    stopScannerStream(stream);
+
                     return;
                 }
 
-                stream = mediaStream;
-                videoRef.current.srcObject = mediaStream;
-                await videoRef.current.play();
+                scannerStreamRef.current = stream;
+                video.srcObject = stream;
+                await video.play();
 
-                intervalId = window.setInterval(async () => {
-                    if (!active || !videoRef.current) {
-                        return;
-                    }
+                const controls = await codeReader.decodeFromStream(
+                    stream,
+                    video,
+                    (result) => {
+                        if (!active || !result) {
+                            return;
+                        }
 
-                    const detections = await detector
-                        .detect(videoRef.current)
-                        .catch(() => []);
-                    const codeDetected = detections[0]?.rawValue?.trim();
+                        const scannedCode = normalizeScannedCode(
+                            result.getText(),
+                        );
 
-                    if (codeDetected) {
-                        handleScannedCode(codeDetected);
-                    }
-                }, 700);
+                        if (scannedCode) {
+                            scannerControlsRef.current?.stop();
+                            scannerControlsRef.current = null;
+                            stopScannerStream(scannerStreamRef.current);
+                            scannerStreamRef.current = null;
+                            handleScannedCode(scannedCode);
+                        }
+                    },
+                );
+
+                if (!active) {
+                    controls.stop();
+                    stopScannerStream(stream);
+
+                    return;
+                }
+
+                scannerControlsRef.current = controls;
+                setScannerStatus('Apunta la camara al QR del insumo.');
             })
-            .catch(() => {
-                setError('No pudimos abrir la camara para leer el QR.');
+            .catch((error: unknown) => {
+                if (!active) {
+                    return;
+                }
+
+                setError(cameraErrorMessage(error));
                 setScannerOpen(false);
             });
 
         return () => {
             active = false;
+            scannerControlsRef.current?.stop();
+            scannerControlsRef.current = null;
+            stopScannerStream(scannerStreamRef.current);
+            scannerStreamRef.current = null;
 
-            if (intervalId) {
-                window.clearInterval(intervalId);
-            }
-
-            if (stream) {
-                stream.getTracks().forEach((track) => track.stop());
-            }
-
-            if (videoRef.current) {
-                videoRef.current.srcObject = null;
+            if (video) {
+                video.srcObject = null;
             }
         };
-    }, [scannerOpen]);
+    }, [handleScannedCode, scannerOpen, scannerVideo]);
 
     return (
         <section className="rounded-md border bg-muted/30 p-3">
@@ -220,50 +329,56 @@ export function ComplaintMaterialsPicker({
                 <div>
                     <p className="text-sm font-semibold">Insumos utilizados</p>
                     <p className="text-xs text-muted-foreground">
-                        Escaneá el QR o cargá el código del insumo del deposito.
+                        Usá materiales ya retirados del deposito y pendientes de
+                        rendir.
                     </p>
                 </div>
-                <button
-                    type="button"
-                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-semibold hover:bg-muted"
-                    onClick={() => setScannerOpen(true)}
-                >
-                    <QrCode className="size-4" /> Escanear QR
-                </button>
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-semibold hover:bg-muted"
+                        onClick={openScanner}
+                    >
+                        <QrCode className="size-4" /> Escanear QR
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => qrPhotoInputRef.current?.click()}
+                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-semibold hover:bg-muted"
+                    >
+                        Leer QR con foto
+                    </button>
+                    <input
+                        ref={qrPhotoInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(event) =>
+                            void scanQrPhoto(event.target.files?.[0])
+                        }
+                    />
+                </div>
             </div>
 
             <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_120px_auto]">
-                <label className="sr-only" htmlFor="material-code">
-                    Codigo
-                </label>
-                <input
-                    id="material-code"
-                    className="input"
-                    value={code}
-                    onChange={(event) => setCode(event.target.value)}
-                    placeholder="Codigo o QR"
-                />
-                <label className="sr-only" htmlFor="material-quantity">
-                    Cantidad
-                </label>
-                <input
-                    id="material-quantity"
-                    className="input"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={quantity}
-                    onChange={(event) =>
-                        setQuantity(event.target.value.replace(/\D/g, ''))
-                    }
-                />
-                <button
-                    type="button"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground"
-                    onClick={addMaterialByCode}
-                >
-                    <Plus className="size-4" /> Agregar
-                </button>
+                <div className="sm:col-span-3">
+                    <label className="sr-only" htmlFor="material-search">
+                        Buscar insumo
+                    </label>
+                    <div className="relative">
+                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            id="material-search"
+                            className="input pl-9"
+                            value={searchQuery}
+                            onChange={(event) =>
+                                setSearchQuery(event.target.value)
+                            }
+                            placeholder="Buscar por codigo, nombre, unidad o palabras clave"
+                        />
+                    </div>
+                </div>
             </div>
 
             {error && (
@@ -272,11 +387,47 @@ export function ComplaintMaterialsPicker({
                 </p>
             )}
 
-            {matchedItem && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                    Encontrado: {matchedItem.name} · Stock actual{' '}
-                    {formatNumber(matchedItem.current_stock)} {matchedItem.unit}
-                </p>
+            {searchQuery.trim() && (
+                <div className="mt-2 grid max-h-72 gap-2 overflow-y-auto rounded-md border bg-background p-2">
+                    {searchResults.length > 0 ? (
+                        searchResults.map((item) => (
+                            <button
+                                key={item.id}
+                                type="button"
+                                disabled={Number(item.pending_quantity) <= 0}
+                                className="grid min-h-16 grid-cols-[1fr_auto] items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                                onClick={() => openQuantityDialog(item)}
+                            >
+                                <span>
+                                    <span className="block text-sm font-semibold">
+                                        {item.code} · {item.name}
+                                    </span>
+                                    <span className="block text-xs text-muted-foreground">
+                                        Stock actual{' '}
+                                        {formatNumber(item.current_stock)} ·
+                                        pendiente{' '}
+                                        {formatNumber(item.pending_quantity)}{' '}
+                                        {item.unit}
+                                    </span>
+                                </span>
+                                <span className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border px-3 text-xs font-semibold">
+                                    {Number(item.pending_quantity) > 0 ? (
+                                        <>
+                                            <Plus className="size-3.5" /> Usar
+                                        </>
+                                    ) : (
+                                        'Sin pendiente'
+                                    )}
+                                </span>
+                            </button>
+                        ))
+                    ) : (
+                        <p className="px-3 py-4 text-sm text-muted-foreground">
+                            No encontramos insumos que coincidan con esa
+                            busqueda.
+                        </p>
+                    )}
+                </div>
             )}
 
             {selectedMaterials.length > 0 ? (
@@ -293,9 +444,10 @@ export function ComplaintMaterialsPicker({
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                     {formatNumber(material.quantity)}{' '}
-                                    {material.item?.unit ?? 'unidad'} · Stock{' '}
+                                    {material.item?.unit ?? 'unidad'} ·
+                                    Pendiente{' '}
                                     {material.item
-                                        ? `${formatNumber(material.item.current_stock)} disponible`
+                                        ? `${formatNumber(material.item.pending_quantity)} disponible`
                                         : 'no disponible'}
                                 </p>
                             </div>
@@ -317,7 +469,16 @@ export function ComplaintMaterialsPicker({
                 </p>
             )}
 
-            <Dialog open={scannerOpen} onOpenChange={setScannerOpen}>
+            <Dialog
+                open={scannerOpen}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setScannerStatus('');
+                    }
+
+                    setScannerOpen(open);
+                }}
+            >
                 <DialogContent className="max-w-xl gap-4">
                     <DialogHeader>
                         <DialogTitle>Escanear QR de insumo</DialogTitle>
@@ -328,7 +489,7 @@ export function ComplaintMaterialsPicker({
                     </DialogHeader>
                     <div className="grid gap-3">
                         <video
-                            ref={videoRef}
+                            ref={setScannerVideo}
                             autoPlay
                             playsInline
                             muted
@@ -336,14 +497,212 @@ export function ComplaintMaterialsPicker({
                         />
                         <p className="flex items-center gap-2 text-xs text-muted-foreground">
                             <ScanLine className="size-4" />
-                            Si el QR coincide con un insumo del inventario, se
-                            agregara automaticamente.
+                            {scannerStatus ||
+                                'Si el QR coincide con un insumo del inventario, vas a poder indicar la cantidad.'}
                         </p>
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {quantityItem && (
+                <Dialog
+                    open
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setQuantityItem(null);
+                        }
+                    }}
+                >
+                    <DialogContent className="max-w-md gap-4">
+                        <DialogHeader>
+                            <DialogTitle>Cantidad utilizada</DialogTitle>
+                            <DialogDescription>
+                                {quantityItem.code} · {quantityItem.name}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4">
+                            <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                                Pendiente de rendir{' '}
+                                {formatNumber(quantityItem.pending_quantity)}{' '}
+                                {quantityItem.unit}
+                            </p>
+                            <div className="grid gap-2">
+                                <label
+                                    className="text-sm font-medium"
+                                    htmlFor="material-quantity"
+                                >
+                                    Unidades utilizadas
+                                </label>
+                                <input
+                                    id="material-quantity"
+                                    className="input"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    value={quantityDraft}
+                                    onChange={(event) =>
+                                        setQuantityDraft(
+                                            event.target.value.replace(
+                                                /\D/g,
+                                                '',
+                                            ),
+                                        )
+                                    }
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    className="inline-flex min-h-10 items-center justify-center rounded-md border px-4 text-sm font-semibold hover:bg-muted"
+                                    onClick={() => setQuantityItem(null)}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                                    onClick={addSelectedQuantity}
+                                >
+                                    <Plus className="size-4" /> Agregar
+                                </button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
         </section>
     );
+}
+
+function isCameraSupported(): boolean {
+    return Boolean(navigator.mediaDevices?.getUserMedia);
+}
+
+function isLocalOrSecureContext(): boolean {
+    return (
+        window.isSecureContext ||
+        ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
+    );
+}
+
+function searchInventoryItems(
+    inventoryItems: InventoryItem[],
+    query: string,
+): InventoryItem[] {
+    const normalizedQuery = normalizeSearchValue(query);
+
+    if (!normalizedQuery) {
+        return [];
+    }
+
+    const terms = normalizedQuery.split(' ').filter(Boolean);
+
+    return inventoryItems
+        .filter((item) => {
+            const searchableValue = normalizeSearchValue(
+                `${item.code} ${item.name} ${item.unit}`,
+            );
+
+            return terms.every((term) => searchableValue.includes(term));
+        })
+        .sort((firstItem, secondItem) => {
+            const firstCode = normalizeSearchValue(firstItem.code);
+            const secondCode = normalizeSearchValue(secondItem.code);
+            const firstName = normalizeSearchValue(firstItem.name);
+            const secondName = normalizeSearchValue(secondItem.name);
+            const firstStartsWithQuery =
+                firstCode.startsWith(normalizedQuery) ||
+                firstName.startsWith(normalizedQuery);
+            const secondStartsWithQuery =
+                secondCode.startsWith(normalizedQuery) ||
+                secondName.startsWith(normalizedQuery);
+
+            if (firstStartsWithQuery !== secondStartsWithQuery) {
+                return firstStartsWithQuery ? -1 : 1;
+            }
+
+            return firstItem.code.localeCompare(secondItem.code, 'es-AR');
+        })
+        .slice(0, 12);
+}
+
+function normalizeSearchValue(value: string): string {
+    return value
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ');
+}
+
+async function openCameraStream(): Promise<MediaStream> {
+    try {
+        return await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+                facingMode: {
+                    ideal: 'environment',
+                },
+            },
+        });
+    } catch (error) {
+        if (isPermissionError(error)) {
+            throw error;
+        }
+
+        return navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: true,
+        });
+    }
+}
+
+function stopScannerStream(stream: MediaStream | null): void {
+    stream?.getTracks().forEach((track) => track.stop());
+}
+
+function isPermissionError(error: unknown): boolean {
+    return error instanceof DOMException && error.name === 'NotAllowedError';
+}
+
+function normalizeScannedCode(value: string): string {
+    const trimmedValue = value.trim();
+
+    try {
+        const url = new URL(trimmedValue);
+        const parts = url.pathname.split('/').filter(Boolean);
+
+        return decodeURIComponent(parts.at(-1) ?? trimmedValue).trim();
+    } catch {
+        return trimmedValue;
+    }
+}
+
+function codesMatch(firstCode: string, secondCode: string): boolean {
+    return firstCode.trim().toLowerCase() === secondCode.trim().toLowerCase();
+}
+
+function cameraErrorMessage(error: unknown): string {
+    if (error instanceof DOMException) {
+        if (error.name === 'NotAllowedError') {
+            return 'El navegador bloqueo el permiso de camara. Habilitalo o carga el codigo manualmente.';
+        }
+
+        if (error.name === 'NotFoundError') {
+            return 'No encontramos una camara disponible en este dispositivo. Carga el codigo manualmente.';
+        }
+
+        if (error.name === 'NotReadableError') {
+            return 'La camara esta siendo usada por otra aplicacion o el navegador no pudo abrirla. Cerrá otras apps y volve a intentar.';
+        }
+
+        if (error.name === 'OverconstrainedError') {
+            return 'La camara trasera no esta disponible. Volve a intentar o carga el codigo manualmente.';
+        }
+    }
+
+    return 'No pudimos abrir la camara para leer el QR. Carga el codigo manualmente.';
 }
 
 function parseQuantity(value: string): number {

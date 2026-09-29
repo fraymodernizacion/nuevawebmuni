@@ -1,7 +1,8 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Download, GitBranch, Save, Tags } from 'lucide-react';
+import { Check, Clipboard, Download, GitBranch, Save, Tags } from 'lucide-react';
 import { FormEvent } from 'react';
 import { storeDerivations } from '@/actions/App/Http/Controllers/Admin/IntakeRequestController';
+import { useClipboard } from '@/hooks/use-clipboard';
 import {
     formatIntakeDate,
     intakeDerivationStatusClass,
@@ -24,7 +25,7 @@ type IntakeRequest = {
     applicant_address?: string | null;
     subject: string;
     summary: string;
-    payload?: Record<string, string>;
+    payload?: Record<string, unknown>;
     created_at: string;
     type: {
         name: string;
@@ -77,6 +78,20 @@ type Derivation = {
     department: Department;
     assistance_type?: AssistanceType | null;
     last_updater?: { name: string } | null;
+    histories: DerivationHistory[];
+};
+
+type DerivationHistory = {
+    id: number;
+    action: string;
+    from_status?: string | null;
+    to_status?: string | null;
+    from_status_label?: string | null;
+    to_status_label?: string | null;
+    previous_response?: string | null;
+    new_response?: string | null;
+    changed_at?: string | null;
+    user?: { name: string } | null;
 };
 
 export default function AdminIntakeShow({
@@ -103,6 +118,9 @@ export default function AdminIntakeShow({
         department_ids: [] as number[],
         operator_note: '',
     });
+    const [copiedText, copyToClipboard] = useClipboard();
+    const whatsAppSummary = buildWhatsAppSummary(request);
+    const wasWhatsAppSummaryCopied = copiedText === whatsAppSummary;
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -289,6 +307,46 @@ export default function AdminIntakeShow({
                                                     {item.department_response}
                                                 </p>
                                             )}
+                                            {item.histories.length > 0 && (
+                                                <ol className="mt-3 grid gap-2 border-l pl-3">
+                                                    {item.histories.map(
+                                                        (history) => (
+                                                            <li
+                                                                key={
+                                                                    history.id
+                                                                }
+                                                                className="text-xs"
+                                                            >
+                                                                <p className="font-semibold">
+                                                                    {formatIntakeDate(
+                                                                        history.changed_at,
+                                                                    )}
+                                                                </p>
+                                                                <p className="text-muted-foreground">
+                                                                    {derivationHistoryActionLabel(
+                                                                        history.action,
+                                                                    )}
+                                                                    {history.to_status_label
+                                                                        ? ` · ${history.to_status_label}`
+                                                                        : ''}
+                                                                    {history
+                                                                        .user
+                                                                        ?.name
+                                                                        ? ` · ${history.user.name}`
+                                                                        : ''}
+                                                                </p>
+                                                                {history.new_response && (
+                                                                    <p className="mt-1 line-clamp-2">
+                                                                        {
+                                                                            history.new_response
+                                                                        }
+                                                                    </p>
+                                                                )}
+                                                            </li>
+                                                        ),
+                                                    )}
+                                                </ol>
+                                            )}
                                         </div>
                                     ))}
                                     {request.derivations.length === 0 && (
@@ -351,6 +409,30 @@ export default function AdminIntakeShow({
                 </main>
 
                 <aside className="flex flex-col gap-4">
+                    <section className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+                        <h2 className="text-lg font-semibold">
+                            Aviso por WhatsApp
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            Genera un resumen listo para enviar al encargado del
+                            area.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => copyToClipboard(whatsAppSummary)}
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 font-semibold text-white"
+                        >
+                            {wasWhatsAppSummaryCopied ? (
+                                <Check className="size-4" />
+                            ) : (
+                                <Clipboard className="size-4" />
+                            )}
+                            {wasWhatsAppSummaryCopied
+                                ? 'Resumen copiado'
+                                : 'Copiar resumen'}
+                        </button>
+                    </section>
+
                     <form
                         onSubmit={submitDerivation}
                         className="flex flex-col gap-3 rounded-lg border bg-card p-4"
@@ -539,21 +621,162 @@ function Panel({
     );
 }
 
-function Info({ label, value }: { label: string; value?: string | null }) {
+function Info({ label, value }: { label: string; value?: unknown }) {
+    const displayValue = displayPayloadValue(value);
+
     return (
         <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase">
                 {label}
             </p>
-            <p className="text-sm">{value || 'Sin dato'}</p>
+            <p className="text-sm">{displayValue || 'Sin dato'}</p>
         </div>
     );
 }
 
 function fieldLabel(request: IntakeRequest, key: string) {
+    if (key === 'subtype') {
+        return 'Tramite especifico';
+    }
+
     return (
         request.type.schema?.find((field) => field.name === key)?.label ?? key
     );
+}
+
+function displayPayloadValue(value: unknown): string {
+    if (value === null || value === undefined || value === '') {
+        return '';
+    }
+
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+        return value.toString();
+    }
+
+    if (Array.isArray(value)) {
+        return value.map(displayPayloadValue).filter(Boolean).join(', ');
+    }
+
+    if (typeof value === 'object') {
+        const objectValue = value as { name?: unknown; label?: unknown };
+
+        if (typeof objectValue.name === 'string') {
+            return objectValue.name;
+        }
+
+        if (typeof objectValue.label === 'string') {
+            return objectValue.label;
+        }
+
+        return JSON.stringify(value);
+    }
+
+    return String(value);
+}
+
+function buildWhatsAppSummary(request: IntakeRequest): string {
+    const lines = [
+        '*Mesa de Entrada - nueva solicitud*',
+        `Codigo: ${request.public_code}`,
+        `Fecha: ${formatIntakeDate(request.created_at)}`,
+        `Estado: ${request.status_label}`,
+        '',
+        '*Vecino / institucion*',
+        `Nombre: ${request.applicant_name}`,
+        `Telefono: ${request.applicant_phone}`,
+        optionalLine('DNI / CUIT', request.applicant_dni),
+        optionalLine('Email', request.applicant_email),
+        optionalLine('Domicilio', request.applicant_address),
+        '',
+        '*Solicitud*',
+        `Categoria: ${request.type.category}`,
+        `Tipo: ${request.type.name}`,
+        `Asunto: ${request.subject}`,
+        `Resumen: ${request.summary}`,
+        ...payloadSummaryLines(request),
+        ...assistanceSummaryLines(request),
+        ...derivationSummaryLines(request),
+        ...attachmentSummaryLines(request),
+    ];
+
+    return lines.filter((line) => line !== null).join('\n');
+}
+
+function optionalLine(label: string, value?: string | null): string | null {
+    if (!value) {
+        return null;
+    }
+
+    return `${label}: ${value}`;
+}
+
+function payloadSummaryLines(request: IntakeRequest): string[] {
+    const entries = Object.entries(request.payload ?? {}).filter(([, value]) =>
+        Boolean(displayPayloadValue(value)),
+    );
+
+    if (entries.length === 0) {
+        return [];
+    }
+
+    return [
+        '',
+        '*Datos cargados*',
+        ...entries.map(
+            ([key, value]) =>
+                `${fieldLabel(request, key)}: ${displayPayloadValue(value)}`,
+        ),
+    ];
+}
+
+function assistanceSummaryLines(request: IntakeRequest): string[] {
+    if (!request.assistance_types?.length) {
+        return [];
+    }
+
+    return [
+        '',
+        `Tipificacion: ${request.assistance_types.map((type) => type.name).join(', ')}`,
+    ];
+}
+
+function derivationSummaryLines(request: IntakeRequest): string[] {
+    if (request.derivations.length === 0) {
+        return [];
+    }
+
+    return [
+        '',
+        '*Derivaciones actuales*',
+        ...request.derivations.map((derivation) => {
+            const assistance = derivation.assistance_type?.name
+                ? ` / ${derivation.assistance_type.name}`
+                : '';
+            const note = derivation.operator_note
+                ? ` - Nota: ${derivation.operator_note}`
+                : '';
+
+            return `${derivation.department.name}${assistance}: ${derivation.status_label}${note}`;
+        }),
+    ];
+}
+
+function attachmentSummaryLines(request: IntakeRequest): string[] {
+    if (request.attachments.length === 0) {
+        return [];
+    }
+
+    return [
+        '',
+        `Adjuntos: ${request.attachments.length}`,
+        ...request.attachments.map(
+            (attachment) => `- ${attachment.original_name}: ${attachment.url}`,
+        ),
+    ];
 }
 
 function statusLabel(
@@ -570,6 +793,14 @@ function historyActionLabel(action: string) {
 
     if (action === 'status_changed') {
         return 'Cambio de estado';
+    }
+
+    return action;
+}
+
+function derivationHistoryActionLabel(action: string) {
+    if (action === 'area_response_updated') {
+        return 'Respuesta actualizada';
     }
 
     return action;

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'intake_request_id',
@@ -53,6 +54,11 @@ class IntakeDerivation extends Model
     public function lastUpdater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'last_updated_by');
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(IntakeDerivationHistory::class);
     }
 
     protected function casts(): array

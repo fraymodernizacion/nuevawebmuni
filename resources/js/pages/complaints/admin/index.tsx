@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ChevronRight,
+    ClipboardList,
     Filter,
     LoaderCircle,
     MapPin,
@@ -8,18 +8,10 @@ import {
     Search,
     X,
 } from 'lucide-react';
-import {
-    FormEvent,
-    KeyboardEvent,
-    useEffect,
-    useRef,
-    useState,
-} from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
 import { show } from '@/actions/App/Http/Controllers/Admin/ComplaintController';
-import {
-    statusBadgeClass,
-    statusLabel,
-} from '@/lib/complaint-labels';
+import { statusBadgeClass, statusLabel } from '@/lib/complaint-labels';
 import { index } from '@/routes/admin/complaints';
 
 type Complaint = {
@@ -251,39 +243,34 @@ export default function AdminComplaintsIndex({
     return (
         <>
             <Head title="Gestión de Reclamos" />
-            <div className="flex flex-col gap-3 p-3 sm:p-4">
+            <div className="flex flex-col gap-4 p-4">
                 <header>
-                    <h1 className="text-xl font-semibold tracking-normal">
+                    <h1 className="text-2xl font-semibold tracking-normal">
                         Gestión de Reclamos
                     </h1>
-                    <p className="text-xs text-muted-foreground">
-                        Alumbrado Público
+                    <p className="text-sm text-muted-foreground">
+                        Bandeja operativa de reclamos de Alumbrado Público.
                     </p>
                 </header>
 
-                <section className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
+                <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {summaryItems.map((item) => (
-                        <button
+                        <Metric
                             key={item.status}
-                            type="button"
+                            label={item.label}
+                            value={(
+                                operationalSummary[item.status] ?? 0
+                            ).toString()}
+                            tone={item.tone}
+                            active={status === item.status}
                             onClick={() => applyStatusFilter(item.status)}
-                            className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-sm font-medium transition hover:bg-muted/50 ${
-                                status === item.status
-                                    ? `${item.tone} ring-2 ring-primary/30`
-                                    : 'bg-card'
-                            }`}
-                        >
-                            <span className="font-semibold">
-                                {operationalSummary[item.status] ?? 0}
-                            </span>
-                            {item.label}
-                        </button>
+                        />
                     ))}
                 </section>
 
                 <form
                     onSubmit={submit}
-                    className="grid gap-2 lg:grid-cols-[minmax(320px,1fr)_150px_190px_170px_auto]"
+                    className="grid gap-3 rounded-lg border bg-card p-3 lg:grid-cols-[minmax(280px,1fr)_150px_190px_170px_auto]"
                 >
                     <label className="relative">
                         {isSearching ? (
@@ -324,9 +311,7 @@ export default function AdminComplaintsIndex({
                     <select
                         className="input min-h-11"
                         value={locality}
-                        onChange={(event) =>
-                            changeLocality(event.target.value)
-                        }
+                        onChange={(event) => changeLocality(event.target.value)}
                     >
                         <option value="">Todas las localidades</option>
                         {options.localities.map((item) => (
@@ -351,7 +336,7 @@ export default function AdminComplaintsIndex({
                         <Filter className="size-4" />
                         Más filtros
                         {secondaryFilterCount > 0 && (
-                            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] text-primary-foreground">
+                            <span className="rounded-md bg-primary px-1.5 py-0.5 text-[11px] text-primary-foreground">
                                 {secondaryFilterCount}
                             </span>
                         )}
@@ -359,7 +344,7 @@ export default function AdminComplaintsIndex({
                 </form>
 
                 {showMoreFilters && (
-                    <section className="grid gap-2 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:max-w-xl">
+                    <section className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:max-w-xl">
                         <select
                             className="input"
                             value={status}
@@ -412,22 +397,22 @@ export default function AdminComplaintsIndex({
                     </section>
                 )}
 
-                <section className="overflow-hidden rounded-lg border bg-card">
+                <section className="grid gap-3">
                     {complaints.data.length === 0 && (
-                        <div className="grid gap-1 px-4 py-8 text-sm">
+                        <div className="rounded-lg border bg-card p-6 text-center text-sm">
                             <p className="font-medium">
                                 {search
                                     ? `No encontramos reclamos para "${search}".`
                                     : 'No hay reclamos para los filtros seleccionados.'}
                             </p>
                             <p className="text-muted-foreground">
-                                Probá buscando por número, DNI, vecino, teléfono,
-                                localidad o tipo de problema.
+                                Probá buscando por número, DNI, vecino,
+                                teléfono, localidad o tipo de problema.
                             </p>
                         </div>
                     )}
                     {complaints.data.map((complaint) => (
-                        <ComplaintRow
+                        <ComplaintCard
                             key={complaint.id}
                             complaint={complaint}
                         />
@@ -457,7 +442,38 @@ export default function AdminComplaintsIndex({
     );
 }
 
-function ComplaintRow({ complaint }: { complaint: Complaint }) {
+function Metric({
+    label,
+    value,
+    tone,
+    active,
+    onClick,
+}: {
+    label: string;
+    value: string;
+    tone: string;
+    active: boolean;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`rounded-lg border bg-card p-4 text-left transition hover:bg-muted/60 ${
+                active ? `${tone} ring-2 ring-primary/30` : ''
+            }`}
+        >
+            <p className="text-xs font-semibold text-muted-foreground uppercase">
+                {label}
+            </p>
+            <p className="mt-1 text-2xl font-semibold tracking-normal">
+                {value}
+            </p>
+        </button>
+    );
+}
+
+function ComplaintCard({ complaint }: { complaint: Complaint }) {
     const detailUrl = show.url(complaint.id);
     const age = complaintAge(complaint.created_at);
 
@@ -478,47 +494,57 @@ function ComplaintRow({ complaint }: { complaint: Complaint }) {
             tabIndex={0}
             onClick={openDetail}
             onKeyDown={openDetailWithKeyboard}
-            className="group cursor-pointer border-b px-3 py-3 text-sm outline-none transition hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-primary/40 sm:px-4"
+            className="grid cursor-pointer gap-3 rounded-lg border bg-card p-4 text-sm transition outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary/40 md:grid-cols-[1fr_180px_160px]"
         >
-            <div className="flex items-start justify-between gap-3">
-                <strong className="text-sm">{complaint.public_code}</strong>
-                <div className="flex items-center gap-2">
-                    <StatusBadge status={complaint.current_status} />
-                    <ChevronRight className="hidden size-4 text-muted-foreground transition group-hover:translate-x-0.5 sm:block" />
+            <div className="flex gap-3">
+                <span
+                    className="mt-1 grid size-10 shrink-0 place-items-center rounded-md text-white"
+                    style={{
+                        backgroundColor: complaint.operational_zone.color,
+                    }}
+                >
+                    <ClipboardList className="size-5" />
+                </span>
+                <div className="min-w-0">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">
+                        {complaint.public_code}
+                    </p>
+                    <h2 className="text-lg font-semibold tracking-normal">
+                        {complaint.type.name}
+                    </h2>
+                    <p className="text-muted-foreground">
+                        {complaint.first_name} {complaint.last_name}
+                        {complaint.dni && ` · DNI ${complaint.dni}`} ·{' '}
+                        {complaint.phone}
+                    </p>
+                    <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                            <MapPin className="size-3.5" />
+                            {complaint.locality.name} · Zona{' '}
+                            {complaint.operational_zone.code}
+                        </span>
+                        {hasCoordinates(complaint) && (
+                            <a
+                                href={mapsUrl(complaint)}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(event) => event.stopPropagation()}
+                                className="font-medium text-blue-700 hover:underline dark:text-blue-300"
+                            >
+                                Ver mapa
+                            </a>
+                        )}
+                    </p>
                 </div>
             </div>
-            <AgeLine age={age} />
-            <div className="mt-1.5 font-semibold">
-                {complaint.type.name}
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                    <MapPin className="size-3.5" />
-                    {complaint.locality.name} · Zona{' '}
-                    {complaint.operational_zone.code}
-                </span>
-                {hasCoordinates(complaint) && (
-                    <a
-                        href={mapsUrl(complaint)}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(event) => event.stopPropagation()}
-                        className="font-medium text-blue-700 hover:underline dark:text-blue-300"
-                    >
-                        Ver mapa
-                    </a>
-                )}
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                <span>
-                    {complaint.first_name} {complaint.last_name}
-                </span>
-                {complaint.dni && <span>DNI {complaint.dni}</span>}
+            <div className="flex flex-col gap-2 text-muted-foreground">
+                <AgeLine age={age} />
                 <span className="inline-flex items-center gap-1">
                     <Phone className="size-3.5" />
                     {complaint.phone}
                 </span>
             </div>
+            <StatusBadge status={complaint.current_status} />
         </article>
     );
 }
@@ -685,9 +711,7 @@ function ageTone(days: number): keyof typeof ageToneClasses {
 }
 
 function paginationLabel(label: string) {
-    return label
-        .replace('&laquo;', 'Anterior')
-        .replace('&raquo;', 'Siguiente');
+    return label.replace('&laquo;', 'Anterior').replace('&raquo;', 'Siguiente');
 }
 
 AdminComplaintsIndex.layout = {

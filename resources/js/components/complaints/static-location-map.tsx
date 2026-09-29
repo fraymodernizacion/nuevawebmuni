@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { Maximize2, Minimize2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 type LeafletNamespace = {
     map: (element: HTMLElement, options: Record<string, unknown>) => LeafletMap;
@@ -37,6 +38,7 @@ export function StaticLocationMap({
     const elementRef = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<LeafletMap | null>(null);
     const markerRef = useRef<LeafletMarker | null>(null);
+    const [fullScreen, setFullScreen] = useState(false);
     const position: [number, number] = [Number(latitude), Number(longitude)];
 
     useEffect(() => {
@@ -97,9 +99,76 @@ export function StaticLocationMap({
         }, 120);
     }, [active, latitude, longitude]);
 
+    useEffect(() => {
+        const mapElement = elementRef.current;
+
+        if (!mapElement) {
+            return;
+        }
+
+        let frame = 0;
+        const resizeMap = () => {
+            window.cancelAnimationFrame(frame);
+            frame = window.requestAnimationFrame(() =>
+                mapRef.current?.invalidateSize(),
+            );
+        };
+        const observer = window.ResizeObserver
+            ? new ResizeObserver(resizeMap)
+            : null;
+        observer?.observe(mapElement);
+        window.addEventListener('resize', resizeMap);
+
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener('resize', resizeMap);
+            window.cancelAnimationFrame(frame);
+        };
+    }, []);
+
+    useEffect(() => {
+        const frame = window.requestAnimationFrame(() =>
+            mapRef.current?.invalidateSize(),
+        );
+
+        return () => window.cancelAnimationFrame(frame);
+    }, [fullScreen]);
+
+    useEffect(() => {
+        if (!fullScreen) {
+            return;
+        }
+
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setFullScreen(false);
+            }
+        };
+        window.addEventListener('keydown', closeOnEscape);
+
+        return () => window.removeEventListener('keydown', closeOnEscape);
+    }, [fullScreen]);
+
     return (
-        <div className="overflow-hidden rounded-md border">
-            <div ref={elementRef} className={`${className} w-full`} />
+        <div
+            className={`overflow-hidden rounded-md border bg-background ${fullScreen ? 'fixed inset-0 z-[1000] flex h-dvh flex-col p-3' : ''}`}
+        >
+            <button
+                type="button"
+                onClick={() => setFullScreen(!fullScreen)}
+                className="m-2 inline-flex min-h-10 items-center gap-2 self-end rounded-md border bg-background px-3 text-sm font-semibold"
+            >
+                {fullScreen ? (
+                    <Minimize2 className="size-4" />
+                ) : (
+                    <Maximize2 className="size-4" />
+                )}
+                {fullScreen ? 'Cerrar pantalla completa' : 'Pantalla completa'}
+            </button>
+            <div
+                ref={elementRef}
+                className={`${fullScreen ? 'h-[calc(100dvh-5rem)] min-h-0' : className} w-full`}
+            />
         </div>
     );
 }

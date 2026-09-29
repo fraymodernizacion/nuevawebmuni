@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'intake_request_type_id',
+    'intake_request_subtype_id',
     'assigned_to',
     'public_code',
     'status',
@@ -44,6 +45,11 @@ class IntakeRequest extends Model
     public function type(): BelongsTo
     {
         return $this->belongsTo(IntakeRequestType::class, 'intake_request_type_id');
+    }
+
+    public function subtype(): BelongsTo
+    {
+        return $this->belongsTo(IntakeRequestSubtype::class, 'intake_request_subtype_id');
     }
 
     public function assignedUser(): BelongsTo

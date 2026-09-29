@@ -4,12 +4,17 @@ import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
 import { defineConfig } from 'vite';
+import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 
 export default defineConfig({
     server: {
         host: '127.0.0.1',
         watch: {
-            ignored: ['**/storage/**', '**/public/build.bak-*/**', '**/.deps-reset-*/**'],
+            ignored: [
+                '**/storage/**',
+                '**/public/build.bak-*/**',
+                '**/.deps-reset-*/**',
+            ],
         },
     },
     plugins: [
@@ -23,6 +28,7 @@ export default defineConfig({
             ],
         }),
         inertia(),
+        wayfinder({ formVariants: true }),
         react({
             babel: {
                 plugins: ['babel-plugin-react-compiler'],

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['slug', 'name', 'category', 'description', 'icon', 'color', 'estimated_time', 'requirements', 'schema', 'active'])]
+#[Fillable(['slug', 'name', 'category', 'description', 'icon', 'color', 'estimated_time', 'cost_information', 'requirements', 'schema', 'active'])]
 class IntakeRequestType extends Model
 {
     /** @use HasFactory<IntakeRequestTypeFactory> */
@@ -17,6 +17,11 @@ class IntakeRequestType extends Model
     public function requests(): HasMany
     {
         return $this->hasMany(IntakeRequest::class);
+    }
+
+    public function subtypes(): HasMany
+    {
+        return $this->hasMany(IntakeRequestSubtype::class);
     }
 
     protected function casts(): array

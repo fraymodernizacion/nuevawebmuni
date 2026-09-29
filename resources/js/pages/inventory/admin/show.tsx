@@ -1,9 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
+import { Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { edit, index } from '@/routes/admin/inventory';
+import { print as printLabels } from '@/routes/admin/inventory/labels';
 
 type Movement = {
     id: number;
@@ -40,6 +42,14 @@ type Props = {
 };
 
 export default function InventoryShow({ item, recentMovements }: Props) {
+    const labelPrintUrl = printLabels.url({
+        query: {
+            items: {
+                [item.id]: 1,
+            },
+        },
+    });
+
     return (
         <>
             <Head title={item.name} />
@@ -147,6 +157,16 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                                     ? 'Bajo stock'
                                     : 'Stock saludable'}
                             </Badge>
+                            <Button asChild className="w-fit">
+                                <a
+                                    href={labelPrintUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Printer className="size-4" />
+                                    Imprimir etiqueta
+                                </a>
+                            </Button>
                         </CardContent>
                     </Card>
                 </section>

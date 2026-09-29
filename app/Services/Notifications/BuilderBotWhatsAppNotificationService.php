@@ -137,7 +137,9 @@ class BuilderBotWhatsAppNotificationService implements WhatsAppNotificationServi
             ComplaintStatus::Assigned->value => "Estimado/a vecino/a {$neighborName}, le informamos que su reclamo {$complaint->public_code} paso a estado \"{$statusLabel}\". Ya fue derivado a una cuadrilla municipal para su atencion.{$observation}{$photo}\n\nSeguimiento: {$trackingUrl}",
             ComplaintStatus::InProgress->value => "Estimado/a vecino/a {$neighborName}, le informamos que su reclamo {$complaint->public_code} paso a estado \"{$statusLabel}\". La cuadrilla se encuentra trabajando sobre la solicitud.{$observation}{$photo}\n\nSeguimiento: {$trackingUrl}",
             ComplaintStatus::NeedsSecondVisit->value => "Estimado/a vecino/a {$neighborName}, le informamos que su reclamo {$complaint->public_code} requiere una segunda visita de la cuadrilla para completar la solucion.{$observation}{$photo}\n\nSeguimiento: {$trackingUrl}",
-            ComplaintStatus::Resolved->value => "Estimado/a vecino/a {$neighborName}, le informamos que su reclamo {$complaint->public_code} fue resuelto por la cuadrilla municipal. Muchas gracias por colaborar con el cuidado del alumbrado publico.{$observation}{$photo}\n\nSeguimiento: {$trackingUrl}",
+            ComplaintStatus::Resolved->value => filled($context['observation'] ?? null)
+                ? "Estimado/a vecino/a {$neighborName}, sobre su reclamo {$complaint->public_code}: {$context['observation']}{$photo}\n\nSeguimiento: {$trackingUrl}"
+                : "Estimado/a vecino/a {$neighborName}, le informamos que su reclamo {$complaint->public_code} fue resuelto por la cuadrilla municipal. Muchas gracias por colaborar con el cuidado del alumbrado publico.{$photo}\n\nSeguimiento: {$trackingUrl}",
             ComplaintStatus::Closed->value => "Estimado/a vecino/a {$neighborName}, le informamos que su reclamo {$complaint->public_code} fue cerrado administrativamente.{$observation}{$photo}\n\nSeguimiento: {$trackingUrl}",
             ComplaintStatus::Cancelled->value => "Estimado/a vecino/a {$neighborName}, le informamos que su reclamo {$complaint->public_code} fue cancelado.{$observation}{$photo}\n\nSeguimiento: {$trackingUrl}",
             default => "Estimado/a vecino/a {$neighborName}, le informamos que su reclamo {$complaint->public_code} paso a estado \"{$statusLabel}\".{$observation}{$photo}\n\nSeguimiento: {$trackingUrl}",
@@ -149,15 +151,23 @@ class BuilderBotWhatsAppNotificationService implements WhatsAppNotificationServi
      */
     private function photoUrl(array $context): ?string
     {
+        $url = null;
+
         if (filled($context['intervention_photo_url'] ?? null)) {
-            return (string) $context['intervention_photo_url'];
+            $url = (string) $context['intervention_photo_url'];
+        } elseif (filled($context['resolution_photo_url'] ?? null)) {
+            $url = (string) $context['resolution_photo_url'];
         }
 
-        if (filled($context['resolution_photo_url'] ?? null)) {
-            return (string) $context['resolution_photo_url'];
+        if ($url === null) {
+            return null;
         }
 
-        return null;
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+            ? null
+            : $url;
     }
 
     private function normalizePhone(string $phone): string

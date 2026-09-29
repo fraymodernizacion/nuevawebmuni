@@ -26,6 +26,85 @@ test('admin can open the inventory management page', function () {
         );
 });
 
+test('admin can open the qr movement scanner without creating inventory movements on page load', function () {
+    $admin = User::factory()->admin()->create();
+    $item = InventoryItem::factory()->create([
+        'code' => 'ALU-QR-001',
+        'name' => 'Insumo QR operativo',
+        'qr_value' => 'ALU-QR-001',
+        'current_stock' => 6,
+        'minimum_stock' => 1,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.inventory.qr_movement'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('inventory/admin/qr-movement')
+            ->where('inventoryUrl', route('admin.inventory.index'))
+            ->where('items.0.code', $item->code)
+            ->where('items.0.movement_store_url', route('inventory.qr.movements.store', ['code' => $item->code])),
+        );
+
+    expect(InventoryMovement::query()->count())->toBe(0);
+});
+
+test('qr movement scanner submits a real provisional withdrawal through the inventory movement flow', function () {
+    $warehouseManager = User::factory()->warehouseManager()->create();
+    $item = InventoryItem::factory()->create([
+        'code' => 'ALU-QR-002',
+        'qr_value' => 'ALU-QR-002',
+        'current_stock' => 8,
+        'minimum_stock' => 1,
+    ]);
+
+    $this->actingAs($warehouseManager)
+        ->post(route('inventory.qr.movements.store', ['code' => $item->code]), [
+            'movement_type' => 'exit',
+            'quantity' => 3,
+            'reference' => 'REC-2026-0002',
+            'reason' => 'Retiro desde modulo QR de deposito',
+        ])
+        ->assertRedirect(route('inventory.qr.show', ['code' => $item->code]));
+
+    $movement = InventoryMovement::query()
+        ->whereBelongsTo($item)
+        ->firstOrFail();
+
+    expect($item->refresh()->current_stock)->toBe('5.00')
+        ->and($movement->movement_type)->toBe('provisional_withdrawal')
+        ->and($movement->quantity)->toBe('3.00')
+        ->and($movement->metadata['source'])->toBe('qr_quick_movement')
+        ->and($movement->complaint_intervention_id)->toBeNull()
+        ->and(InventoryMovement::query()->where('movement_type', 'complaint_consumption')->count())->toBe(0);
+});
+
+test('admin can search inventory items', function () {
+    $admin = User::factory()->admin()->create();
+    $matchingItem = InventoryItem::factory()->create([
+        'code' => 'ALU-LED-010',
+        'name' => 'Modulo LED',
+        'description' => 'Repuesto para luminaria LED',
+        'qr_value' => 'ALU-LED-010',
+    ]);
+    InventoryItem::factory()->create([
+        'code' => 'ALU-CAB-010',
+        'name' => 'Cable subterraneo',
+        'description' => 'Rollo de cable',
+        'qr_value' => 'ALU-CAB-010',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.inventory.index', ['search' => 'LED']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('inventory/admin/index')
+            ->where('items.data.0.code', $matchingItem->code)
+            ->where('items.total', 1)
+            ->where('filters.search', 'LED'),
+        );
+});
+
 test('admin can create an inventory item with an automatic code from its category', function () {
     $admin = User::factory()->admin()->create();
     InventoryItem::factory()->create([

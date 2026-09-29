@@ -33,6 +33,7 @@ class UpdateIntakeDepartmentRequest extends FormRequest
                 Rule::unique('intake_departments', 'slug')->ignore($this->department()),
             ],
             'description' => ['nullable', 'string', 'max:500'],
+            'secretariat' => ['nullable', 'string', 'max:160'],
             'color' => ['required', 'string', 'max:20'],
             'active' => ['boolean'],
         ];

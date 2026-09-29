@@ -504,8 +504,76 @@ test('crew work index only exposes assigned pending complaints on the map', func
             ->where('routePlanningEnabled', false)
             ->where('todayRoute', null)
             ->has('pendingMapComplaints', 1)
-            ->where('pendingMapComplaints.0.id', $assignedComplaint->id),
+            ->where('pendingMapComplaints.0.id', $assignedComplaint->id)
+            ->where('pendingMapComplaints.0.latitude', $assignedComplaint->latitude)
+            ->where('pendingMapComplaints.0.longitude', $assignedComplaint->longitude),
         );
+});
+
+test('crew work summary filters by status and keeps zone selection', function () {
+    $crew = Crew::firstOrFail();
+    $crewMember = User::factory()->crewMember()->create(['primary_crew_id' => $crew->id]);
+    $zone = OperationalZone::where('code', 'A')->firstOrFail();
+    $otherZone = OperationalZone::where('code', 'B')->firstOrFail();
+
+    $inProgress = Complaint::factory()->create([
+        'assigned_crew_id' => $crew->id,
+        'operational_zone_id' => $zone->id,
+        'current_status' => ComplaintStatus::InProgress,
+        'latitude' => -28.39,
+        'longitude' => -65.7,
+    ]);
+    Complaint::factory()->create([
+        'assigned_crew_id' => $crew->id,
+        'operational_zone_id' => $otherZone->id,
+        'current_status' => ComplaintStatus::InProgress,
+    ]);
+    $resolved = Complaint::factory()->create([
+        'assigned_crew_id' => $crew->id,
+        'operational_zone_id' => $zone->id,
+        'current_status' => ComplaintStatus::Resolved,
+        'resolved_at' => now(),
+    ]);
+
+    $this->actingAs($crewMember)
+        ->get(route('crew.work.index', ['zone' => $zone->id, 'status' => 'in_progress']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('selectedStatus', 'in_progress')
+            ->has('complaints', 1)
+            ->where('complaints.0.id', $inProgress->id)
+            ->has('pendingMapComplaints', 1));
+
+    $this->actingAs($crewMember)
+        ->get(route('crew.work.index', ['zone' => $zone->id, 'status' => 'resolved_today']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('selectedStatus', 'resolved_today')
+            ->has('complaints', 1)
+            ->where('complaints.0.id', $resolved->id));
+});
+
+test('crew can reload complaint detail after saving an intervention', function () {
+    $crew = Crew::firstOrFail();
+    $crewMember = User::factory()->crewMember()->create(['primary_crew_id' => $crew->id]);
+    $complaint = Complaint::factory()->create([
+        'assigned_crew_id' => $crew->id,
+        'current_status' => ComplaintStatus::Assigned,
+    ]);
+
+    $this->actingAs($crewMember)
+        ->from(route('crew.work.show', $complaint))
+        ->post(route('admin.complaints.interventions.store', $complaint), [
+            'status' => ComplaintStatus::Resolved->value,
+            'citizen_message' => 'La luminaria quedó reparada.',
+            'send_whatsapp' => false,
+        ])
+        ->assertRedirect(route('crew.work.show', $complaint));
+
+    $this->actingAs($crewMember)
+        ->get(route('crew.work.show', $complaint))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('complaint.current_status', ComplaintStatus::Resolved->value)
+            ->has('complaint.interventions', 1));
 });
 
 test('complaint manager work index exposes new unassigned complaints', function () {

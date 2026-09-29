@@ -1,4 +1,5 @@
-import { Navigation } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { Maximize2, Minimize2, Navigation } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { show as showAdminComplaint } from '@/actions/App/Http/Controllers/Admin/ComplaintController';
 import { show as showCrewComplaint } from '@/actions/App/Http/Controllers/CrewWorkController';
@@ -85,6 +86,89 @@ export function PendingComplaintsMap({
     const mapRef = useRef<LeafletMap | null>(null);
     const operatorMarkerRef = useRef<LeafletMarker | null>(null);
     const [locationMessage, setLocationMessage] = useState('');
+    const [fullScreen, setFullScreen] = useState(false);
+
+    useEffect(() => {
+        const mapElement = elementRef.current;
+
+        if (!mapElement) {
+            return;
+        }
+
+        const openComplaint = (event: MouseEvent) => {
+            const target = event.target;
+
+            if (!(target instanceof Element)) {
+                return;
+            }
+
+            const link = target.closest<HTMLAnchorElement>(
+                'a[data-complaint-open]',
+            );
+
+            if (!link) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            router.visit(link.href);
+        };
+        mapElement.addEventListener('click', openComplaint, true);
+
+        return () =>
+            mapElement.removeEventListener('click', openComplaint, true);
+    }, []);
+
+    useEffect(() => {
+        if (!fullScreen) {
+            return;
+        }
+
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setFullScreen(false);
+            }
+        };
+        window.addEventListener('keydown', closeOnEscape);
+
+        return () => window.removeEventListener('keydown', closeOnEscape);
+    }, [fullScreen]);
+
+    useEffect(() => {
+        const mapElement = elementRef.current;
+
+        if (!mapElement) {
+            return;
+        }
+
+        let frame = 0;
+        const resizeMap = () => {
+            window.cancelAnimationFrame(frame);
+            frame = window.requestAnimationFrame(() =>
+                mapRef.current?.invalidateSize?.(),
+            );
+        };
+        const observer = window.ResizeObserver
+            ? new ResizeObserver(resizeMap)
+            : null;
+        observer?.observe(mapElement);
+        window.addEventListener('resize', resizeMap);
+
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener('resize', resizeMap);
+            window.cancelAnimationFrame(frame);
+        };
+    }, []);
+
+    useEffect(() => {
+        const frame = window.requestAnimationFrame(() =>
+            mapRef.current?.invalidateSize?.(),
+        );
+
+        return () => window.cancelAnimationFrame(frame);
+    }, [fullScreen]);
 
     useEffect(() => {
         let mounted = true;
@@ -172,7 +256,7 @@ export function PendingComplaintsMap({
             mapRef.current = null;
             operatorMarkerRef.current = null;
         };
-    }, [complaints]);
+    }, [complaints, detailRoute]);
 
     const visibleComplaints = complaints.filter(
         (complaint) =>
@@ -181,7 +265,9 @@ export function PendingComplaintsMap({
     );
 
     return (
-        <section className="grid gap-3 rounded-lg border bg-card p-4">
+        <section
+            className={`gap-3 rounded-lg border bg-card p-4 ${fullScreen ? 'fixed inset-0 z-[1000] flex h-dvh flex-col overflow-y-auto' : 'grid'}`}
+        >
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 className="text-lg font-semibold">{title}</h2>
@@ -190,6 +276,20 @@ export function PendingComplaintsMap({
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setFullScreen(!fullScreen)}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-md border px-3 text-sm font-semibold"
+                    >
+                        {fullScreen ? (
+                            <Minimize2 className="size-4" />
+                        ) : (
+                            <Maximize2 className="size-4" />
+                        )}
+                        {fullScreen
+                            ? 'Cerrar pantalla completa'
+                            : 'Pantalla completa'}
+                    </button>
                     <button
                         type="button"
                         onClick={showOperatorLocation}
@@ -223,8 +323,13 @@ export function PendingComplaintsMap({
                     {locationMessage}
                 </p>
             )}
-            <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <div ref={elementRef} className="h-96 w-full touch-pan-y" />
+            <div
+                className={`municipal-leaflet-map relative isolate z-0 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 ${fullScreen ? 'min-h-[40vh] flex-1' : ''}`}
+            >
+                <div
+                    ref={elementRef}
+                    className={`${fullScreen ? 'h-full min-h-[40vh]' : 'h-96'} w-full touch-pan-y`}
+                />
             </div>
             {visibleComplaints.length === 0 && (
                 <p className="text-sm text-muted-foreground">
@@ -316,7 +421,7 @@ function popupContent(
             <p style="margin: 4px 0">${escapeHtml(location || 'Sin referencia cargada')}</p>
             ${complaint.created_at ? `<p style="margin: 4px 0; color: #71717a">${escapeHtml(relativeTime(complaint.created_at))}</p>` : ''}
             <div style="display: flex; gap: 10px; margin-top: 8px">
-                <a href="${openUrl}">Abrir</a>
+                <a href="${escapeHtml(openUrl)}" data-complaint-open="true">Abrir</a>
                 <a href="${mapsUrl}" target="_blank" rel="noreferrer">Como llegar</a>
             </div>
         </div>
