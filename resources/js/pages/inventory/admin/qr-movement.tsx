@@ -633,7 +633,10 @@ export default function InventoryQrMovement({
                                         ·{' '}
                                         {new Date(
                                             scanResult.scannedAt,
-                                        ).toLocaleTimeString('es-AR')}
+                                        ).toLocaleTimeString('es-AR', {
+                                            timeZone:
+                                                'America/Argentina/Buenos_Aires',
+                                        })}
                                     </p>
                                 </button>
                             ))}
@@ -685,7 +688,9 @@ function ScanDebug({ result }: { result: ScanResult }) {
             <p className="font-mono break-all">{result.rawValue}</p>
             <p className="text-xs text-muted-foreground">
                 Codigo detectado: {result.parsedCode || '-'} ·{' '}
-                {new Date(result.scannedAt).toLocaleString('es-AR')}
+                {new Date(result.scannedAt).toLocaleString('es-AR', {
+                    timeZone: 'America/Argentina/Buenos_Aires',
+                })}
             </p>
         </div>
     );

@@ -125,7 +125,10 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                                     item.updated_at
                                         ? new Date(
                                               item.updated_at,
-                                          ).toLocaleString('es-AR')
+                                          ).toLocaleString('es-AR', {
+                                              timeZone:
+                                                  'America/Argentina/Buenos_Aires',
+                                          })
                                         : '-'
                                 }
                             />
@@ -210,7 +213,10 @@ export default function InventoryShow({ item, recentMovements }: Props) {
                                             <p>
                                                 {new Date(
                                                     movement.created_at,
-                                                ).toLocaleString('es-AR')}
+                                                ).toLocaleString('es-AR', {
+                                                    timeZone:
+                                                        'America/Argentina/Buenos_Aires',
+                                                })}
                                             </p>
                                         </div>
                                     </div>

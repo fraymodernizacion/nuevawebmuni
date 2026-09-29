@@ -10,6 +10,7 @@ use App\Models\ComplaintCategory;
 use App\Models\ComplaintType;
 use App\Models\Locality;
 use App\Models\OperationalZone;
+use App\Support\LocalDateTime;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,16 +27,20 @@ class ComplaintDashboardController extends Controller
         $total = Complaint::count();
         $resolved = Complaint::where('current_status', ComplaintStatus::Resolved)->count();
         $pendingValues = ComplaintStatus::pendingValues();
-        $olderThanSevenDays = today()->subDays(7);
+        $today = LocalDateTime::today();
+        $todayStartUtc = LocalDateTime::startOfDayUtc($today);
+        $tomorrowStartUtc = LocalDateTime::nextDayUtc($today);
+        $recentStartUtc = LocalDateTime::startOfDayUtc($today->modify('-2 days'));
+        $olderThanSevenDaysEndUtc = LocalDateTime::nextDayUtc($today->modify('-7 days'));
 
         return Inertia::render('complaints/admin/dashboard', [
             'kpis' => [
-                'today' => Complaint::whereDate('created_at', today())->count(),
+                'today' => Complaint::where('created_at', '>=', $todayStartUtc)->where('created_at', '<', $tomorrowStartUtc)->count(),
                 'open' => Complaint::whereIn('current_status', $pendingValues)->count(),
                 'in_progress' => Complaint::where('current_status', ComplaintStatus::InProgress)->count(),
                 'second_visit' => Complaint::where('current_status', ComplaintStatus::NeedsSecondVisit)->count(),
                 'urgent' => Complaint::where('priority', ComplaintPriority::Urgent)->whereIn('current_status', $pendingValues)->count(),
-                'older_than_seven_days' => Complaint::whereIn('current_status', $pendingValues)->whereDate('created_at', '<=', $olderThanSevenDays)->count(),
+                'older_than_seven_days' => Complaint::whereIn('current_status', $pendingValues)->where('created_at', '<', $olderThanSevenDaysEndUtc)->count(),
                 'resolved' => $resolved,
                 'resolution_rate' => $total > 0 ? round(($resolved / $total) * 100, 1) : 0,
             ],
@@ -113,16 +118,18 @@ class ComplaintDashboardController extends Controller
                     ->orderByDesc('total')
                     ->get(),
                 'aging' => [
-                    ['label' => '0 a 2 dias', 'total' => Complaint::whereIn('current_status', $pendingValues)->whereDate('created_at', '>=', today()->subDays(2))->count()],
-                    ['label' => '3 a 7 dias', 'total' => Complaint::whereIn('current_status', $pendingValues)->whereDate('created_at', '<', today()->subDays(2))->whereDate('created_at', '>', $olderThanSevenDays)->count()],
-                    ['label' => 'Mas de 7 dias', 'total' => Complaint::whereIn('current_status', $pendingValues)->whereDate('created_at', '<=', $olderThanSevenDays)->count()],
+                    ['label' => '0 a 2 dias', 'total' => Complaint::whereIn('current_status', $pendingValues)->where('created_at', '>=', $recentStartUtc)->count()],
+                    ['label' => '3 a 7 dias', 'total' => Complaint::whereIn('current_status', $pendingValues)->where('created_at', '<', $recentStartUtc)->where('created_at', '>=', $olderThanSevenDaysEndUtc)->count()],
+                    ['label' => 'Mas de 7 dias', 'total' => Complaint::whereIn('current_status', $pendingValues)->where('created_at', '<', $olderThanSevenDaysEndUtc)->count()],
                 ],
                 'trend' => collect(range(6, 0))->map(function (int $daysAgo): array {
-                    $date = today()->subDays($daysAgo);
+                    $date = LocalDateTime::today()->modify("-{$daysAgo} days");
 
                     return [
                         'label' => $date->format('d/m'),
-                        'total' => Complaint::whereDate('created_at', $date)->count(),
+                        'total' => Complaint::where('created_at', '>=', LocalDateTime::startOfDayUtc($date))
+                            ->where('created_at', '<', LocalDateTime::nextDayUtc($date))
+                            ->count(),
                     ];
                 })->values(),
             ],

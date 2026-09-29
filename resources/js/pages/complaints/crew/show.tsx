@@ -22,6 +22,7 @@ import type { ComplaintMaterialInput } from '@/components/complaints/complaint-m
 import { StaticLocationMap } from '@/components/complaints/static-location-map';
 import { WhatsappNotificationToggle } from '@/components/complaints/whatsapp-notification-toggle';
 import {
+    formatDateTime,
     historyActionLabel,
     statusBadgeClass,
     statusLabel,
@@ -1025,16 +1026,6 @@ function Info({ label, value }: { label: string; value: string }) {
             <p className="mt-1 font-medium break-words">{value}</p>
         </div>
     );
-}
-
-function formatDateTime(value: string) {
-    return new Intl.DateTimeFormat('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date(value));
 }
 
 function mapsUrl(latitude: string | number, longitude: string | number) {

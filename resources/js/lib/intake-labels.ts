@@ -27,6 +27,7 @@ export function formatIntakeDate(value?: string | null) {
     }
 
     return new Date(value).toLocaleString('es-AR', {
+        timeZone: 'America/Argentina/Buenos_Aires',
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',

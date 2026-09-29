@@ -8,6 +8,7 @@ use App\Http\Requests\TrackIntakeRequestRequest;
 use App\Models\IntakeRequest;
 use App\Models\IntakeRequestSubtype;
 use App\Models\IntakeRequestType;
+use App\Support\LocalDateTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -140,11 +141,11 @@ class PublicIntakeRequestController extends Controller
                 'type' => $intakeRequest->type->name,
                 'status' => $intakeRequest->status->label(),
                 'summary' => $intakeRequest->summary,
-                'created_at' => $intakeRequest->created_at?->format('d/m/Y H:i'),
+                'created_at' => LocalDateTime::format($intakeRequest->created_at),
                 'timeline' => $intakeRequest->histories->map(fn ($history): array => [
                     'action' => $history->action,
                     'status_label' => $history->to_status?->label(),
-                    'date' => $history->changed_at?->format('d/m/Y H:i'),
+                    'date' => LocalDateTime::format($history->changed_at),
                     'comment' => $history->public_comment,
                 ])->values(),
             ],
@@ -193,7 +194,7 @@ class PublicIntakeRequestController extends Controller
 
     private function nextPublicCode(): string
     {
-        $year = now()->format('Y');
+        $year = LocalDateTime::today()->format('Y');
         $nextNumber = $this->nextPublicNumberFromCodes(
             IntakeRequest::where('public_code', 'like', "FME-{$year}-%")
                 ->lockForUpdate()

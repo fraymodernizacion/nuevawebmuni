@@ -9,6 +9,7 @@ use App\Models\InventoryItem;
 use App\Models\OperationalZone;
 use App\Models\WorkRoute;
 use App\Services\Inventory\PendingInventoryWithdrawals;
+use App\Support\LocalDateTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -27,6 +28,8 @@ class CrewWorkController extends Controller
         }
         $routePlanningEnabled = (bool) config('complaints.route_planning_enabled');
         $canManageComplaintOperations = $user->canUseComplaintManagement();
+        $todayStartUtc = LocalDateTime::startOfDayUtc();
+        $tomorrowStartUtc = LocalDateTime::nextDayUtc();
 
         abort_unless($user->canUseCrewWork(), 403);
 
@@ -34,7 +37,7 @@ class CrewWorkController extends Controller
             ->when(! $canManageComplaintOperations, fn ($query) => $query->where('assigned_crew_id', $user->primary_crew_id))
             ->when($statusFilter === 'pending', fn ($query) => $query->whereIn('current_status', ComplaintStatus::pendingValues()))
             ->when($statusFilter === 'in_progress', fn ($query) => $query->where('current_status', ComplaintStatus::InProgress))
-            ->when($statusFilter === 'resolved_today', fn ($query) => $query->where('current_status', ComplaintStatus::Resolved)->whereDate('resolved_at', today()))
+            ->when($statusFilter === 'resolved_today', fn ($query) => $query->where('current_status', ComplaintStatus::Resolved)->where('resolved_at', '>=', $todayStartUtc)->where('resolved_at', '<', $tomorrowStartUtc))
             ->when($zoneId, fn ($query) => $query->where('operational_zone_id', $zoneId))
             ->oldest()
             ->get();
@@ -43,7 +46,7 @@ class CrewWorkController extends Controller
             ->when(! $canManageComplaintOperations, fn ($query) => $query->where('assigned_crew_id', $user->primary_crew_id))
             ->when($statusFilter === 'pending', fn ($query) => $query->whereIn('current_status', ComplaintStatus::pendingValues()))
             ->when($statusFilter === 'in_progress', fn ($query) => $query->where('current_status', ComplaintStatus::InProgress))
-            ->when($statusFilter === 'resolved_today', fn ($query) => $query->where('current_status', ComplaintStatus::Resolved)->whereDate('resolved_at', today()))
+            ->when($statusFilter === 'resolved_today', fn ($query) => $query->where('current_status', ComplaintStatus::Resolved)->where('resolved_at', '>=', $todayStartUtc)->where('resolved_at', '<', $tomorrowStartUtc))
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->when($zoneId, fn ($query) => $query->where('operational_zone_id', $zoneId))
@@ -88,7 +91,8 @@ class CrewWorkController extends Controller
                     ->count(),
                 'resolved_today' => (clone $baseAssignedQuery)
                     ->where('current_status', ComplaintStatus::Resolved)
-                    ->whereDate('resolved_at', today())
+                    ->where('resolved_at', '>=', $todayStartUtc)
+                    ->where('resolved_at', '<', $tomorrowStartUtc)
                     ->count(),
             ],
             'selectedZoneId' => $zoneId,
@@ -100,7 +104,7 @@ class CrewWorkController extends Controller
             'todayRoute' => $routePlanningEnabled
                 ? WorkRoute::with(['operationalZone:id,code,name,color', 'crew:id,name,code', 'complaints.type:id,name', 'complaints.locality:id,name'])
                     ->where('crew_id', $user->primary_crew_id)
-                    ->whereDate('date', today())
+                    ->whereDate('date', LocalDateTime::today()->format('Y-m-d'))
                     ->when($zoneId, fn ($query) => $query->where('operational_zone_id', $zoneId))
                     ->latest()
                     ->first()
@@ -157,7 +161,7 @@ class CrewWorkController extends Controller
                     'type_label' => $photo->type->label(),
                     'url' => $photo->url(),
                     'original_name' => $photo->original_name,
-                    'taken_at' => $photo->taken_at?->format('d/m/Y H:i'),
+                    'taken_at' => LocalDateTime::format($photo->taken_at),
                 ])->values(),
                 'history' => $complaint->statusHistories->map(fn ($history): array => [
                     'id' => $history->id,
@@ -167,7 +171,7 @@ class CrewWorkController extends Controller
                     'observation' => $history->observation,
                     'new_values' => $history->new_values,
                     'user' => $history->user?->only(['id', 'name']),
-                    'changed_at' => $history->changed_at?->format('d/m/Y H:i'),
+                    'changed_at' => LocalDateTime::format($history->changed_at),
                 ])->values(),
             ],
             'canIntervene' => Gate::allows('intervene', $complaint),

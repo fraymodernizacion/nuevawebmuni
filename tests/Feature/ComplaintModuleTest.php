@@ -11,6 +11,7 @@ use App\Models\Locality;
 use App\Models\OperationalZone;
 use App\Models\User;
 use App\Models\WorkRoute;
+use Carbon\CarbonImmutable;
 use Database\Seeders\ComplaintModuleSeeder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -511,6 +512,8 @@ test('crew work index only exposes assigned pending complaints on the map', func
 });
 
 test('crew work summary filters by status and keeps zone selection', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-29 23:30:00', 'UTC'));
+
     $crew = Crew::firstOrFail();
     $crewMember = User::factory()->crewMember()->create(['primary_crew_id' => $crew->id]);
     $zone = OperationalZone::where('code', 'A')->firstOrFail();
@@ -534,6 +537,12 @@ test('crew work summary filters by status and keeps zone selection', function ()
         'current_status' => ComplaintStatus::Resolved,
         'resolved_at' => now(),
     ]);
+    Complaint::factory()->create([
+        'assigned_crew_id' => $crew->id,
+        'operational_zone_id' => $zone->id,
+        'current_status' => ComplaintStatus::Resolved,
+        'resolved_at' => now()->startOfDay()->addHours(2),
+    ]);
 
     $this->actingAs($crewMember)
         ->get(route('crew.work.index', ['zone' => $zone->id, 'status' => 'in_progress']))
@@ -547,11 +556,14 @@ test('crew work summary filters by status and keeps zone selection', function ()
         ->get(route('crew.work.index', ['zone' => $zone->id, 'status' => 'resolved_today']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('selectedStatus', 'resolved_today')
+            ->where('summary.resolved_today', 1)
             ->has('complaints', 1)
             ->where('complaints.0.id', $resolved->id));
 });
 
 test('crew can reload complaint detail after saving an intervention', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-29 02:15:00', 'UTC'));
+
     $crew = Crew::firstOrFail();
     $crewMember = User::factory()->crewMember()->create(['primary_crew_id' => $crew->id]);
     $complaint = Complaint::factory()->create([
@@ -573,7 +585,22 @@ test('crew can reload complaint detail after saving an intervention', function (
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('complaint.current_status', ComplaintStatus::Resolved->value)
+            ->where('complaint.history.0.changed_at', '28/09/2026 23:15')
             ->has('complaint.interventions', 1));
+});
+
+test('dashboard counts complaints by the Argentine calendar day', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-29 01:30:00', 'UTC'));
+
+    $operator = User::factory()->operator()->create();
+    Complaint::factory()->create(['created_at' => now()]);
+    Complaint::factory()->create(['created_at' => now()->addHours(2)]);
+
+    $this->actingAs($operator)
+        ->get(route('admin.complaints.dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('kpis.today', 1));
 });
 
 test('complaint manager work index exposes new unassigned complaints', function () {

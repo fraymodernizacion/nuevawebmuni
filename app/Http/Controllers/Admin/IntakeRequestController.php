@@ -14,6 +14,7 @@ use App\Models\IntakeDepartment;
 use App\Models\IntakeDerivation;
 use App\Models\IntakeDerivationHistory;
 use App\Models\IntakeRequest;
+use App\Support\LocalDateTime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -142,7 +143,7 @@ class IntakeRequestController extends Controller
                     'original_name' => $attachment->original_name,
                     'url' => $attachment->url(),
                     'type' => $attachment->type,
-                    'created_at' => $attachment->created_at?->format('d/m/Y H:i'),
+                    'created_at' => LocalDateTime::format($attachment->created_at),
                 ]),
                 'derivations' => $intakeRequest->derivations->map(fn (IntakeDerivation $derivation): array => $this->derivationPayload($derivation)),
             ],
@@ -247,8 +248,8 @@ class IntakeRequestController extends Controller
             'status_label' => $derivation->status->label(),
             'operator_note' => $derivation->operator_note,
             'department_response' => $derivation->department_response,
-            'created_at' => $derivation->created_at?->format('d/m/Y H:i'),
-            'updated_at' => $derivation->updated_at?->format('d/m/Y H:i'),
+            'created_at' => LocalDateTime::format($derivation->created_at),
+            'updated_at' => LocalDateTime::format($derivation->updated_at),
             'department' => $derivation->department,
             'assistance_type' => $derivation->assistanceType,
             'last_updater' => $derivation->lastUpdater,

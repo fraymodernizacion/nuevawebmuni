@@ -8,6 +8,7 @@ import {
 import { BackButton } from '@/components/back-button';
 import { PendingComplaintsMap } from '@/components/complaints/pending-complaints-map';
 import {
+    formatDateTime,
     statusBadgeClass,
     statusLabel,
     workRouteStatusLabel,
@@ -384,16 +385,6 @@ function SummaryPill({
             </p>
         </Link>
     );
-}
-
-function formatDateTime(value: string) {
-    return new Intl.DateTimeFormat('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date(value));
 }
 
 function formatRelativeTime(value: string) {

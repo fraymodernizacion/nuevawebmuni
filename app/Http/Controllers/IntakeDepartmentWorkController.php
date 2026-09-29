@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\IntakeDerivationStatus;
 use App\Http\Requests\UpdateIntakeDerivationRequest;
 use App\Models\IntakeDerivation;
+use App\Support\LocalDateTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -57,8 +58,8 @@ class IntakeDepartmentWorkController extends Controller
                 'status_label' => $intakeDerivation->status->label(),
                 'operator_note' => $intakeDerivation->operator_note,
                 'department_response' => $intakeDerivation->department_response,
-                'created_at' => $intakeDerivation->created_at?->format('d/m/Y H:i'),
-                'updated_at' => $intakeDerivation->updated_at?->format('d/m/Y H:i'),
+                'created_at' => LocalDateTime::format($intakeDerivation->created_at),
+                'updated_at' => LocalDateTime::format($intakeDerivation->updated_at),
                 'department' => $intakeDerivation->department,
                 'assistance_type' => $intakeDerivation->assistanceType,
                 'histories' => $this->historyPayload($intakeDerivation),
@@ -70,7 +71,7 @@ class IntakeDepartmentWorkController extends Controller
                         'original_name' => $attachment->original_name,
                         'url' => $attachment->url(),
                         'type' => $attachment->type,
-                        'created_at' => $attachment->created_at?->format('d/m/Y H:i'),
+                        'created_at' => LocalDateTime::format($attachment->created_at),
                     ]),
                     'histories' => $intakeDerivation->request->histories->map(fn ($history): array => [
                         'id' => $history->id,

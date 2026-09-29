@@ -10,6 +10,7 @@ use App\Models\ComplaintCategory;
 use App\Models\ComplaintPhoto;
 use App\Models\Locality;
 use App\Services\Complaints\CreateComplaint;
+use App\Support\LocalDateTime;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -83,7 +84,7 @@ class PublicComplaintController extends Controller
                     'name' => $category->name,
                 ])
                 ->values(),
-            'currentYear' => now()->year,
+            'currentYear' => (int) LocalDateTime::today()->format('Y'),
         ]);
     }
 
@@ -137,7 +138,7 @@ class PublicComplaintController extends Controller
                 'status' => null,
                 'status_label' => $photo->type->label(),
                 'observation' => null,
-                'date' => ($photo->taken_at ?? $photo->created_at)?->format('d/m/Y H:i'),
+                'date' => LocalDateTime::format($photo->taken_at ?? $photo->created_at),
                 'sort_date' => ($photo->taken_at ?? $photo->created_at)?->timestamp ?? 0,
                 'photos' => [$this->photoPayload($photo)],
             ]);
@@ -146,7 +147,7 @@ class PublicComplaintController extends Controller
             'status' => $history->to_status?->value,
             'status_label' => $history->to_status?->label(),
             'observation' => $history->observation,
-            'date' => $history->changed_at?->format('d/m/Y H:i'),
+            'date' => LocalDateTime::format($history->changed_at),
             'sort_date' => $history->changed_at?->timestamp ?? 0,
             'photos' => [],
         ]);
@@ -155,9 +156,9 @@ class PublicComplaintController extends Controller
             'public_code' => $complaint->public_code,
             'category' => $complaint->category?->name,
             'type' => $complaint->type->name,
-            'created_at' => $complaint->created_at?->format('d/m/Y H:i'),
+            'created_at' => LocalDateTime::format($complaint->created_at),
             'status' => $complaint->current_status->label(),
-            'updated_at' => $complaint->updated_at?->format('d/m/Y H:i'),
+            'updated_at' => LocalDateTime::format($complaint->updated_at),
             'description' => $complaint->description,
             'other_problem_description' => $complaint->other_problem_description,
             'location' => [
@@ -197,7 +198,7 @@ class PublicComplaintController extends Controller
             'type_label' => $photo->type->label(),
             'url' => $photo->url(),
             'original_name' => $photo->original_name,
-            'taken_at' => $photo->taken_at?->format('d/m/Y H:i'),
+            'taken_at' => LocalDateTime::format($photo->taken_at),
         ];
     }
 }

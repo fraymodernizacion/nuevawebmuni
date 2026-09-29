@@ -8,6 +8,7 @@ use App\Jobs\SendWhatsAppComplaintNotification;
 use App\Models\Complaint;
 use App\Models\ComplaintCategory;
 use App\Models\Locality;
+use App\Support\LocalDateTime;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -67,7 +68,7 @@ class CreateComplaint
 
     private function nextPublicCode(ComplaintCategory $category): string
     {
-        $year = now()->format('Y');
+        $year = LocalDateTime::today()->format('Y');
         $prefix = str($category->code)->substr(0, 3)->upper()->toString();
         $lastCode = Complaint::where('public_code', 'like', "{$prefix}-{$year}-%")
             ->lockForUpdate()

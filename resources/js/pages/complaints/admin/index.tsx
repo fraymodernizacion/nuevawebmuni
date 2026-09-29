@@ -677,7 +677,9 @@ function complaintAge(value: string) {
 
     return {
         label: ageLabel(diffDays),
-        date: createdAt.toLocaleDateString('es-AR'),
+        date: createdAt.toLocaleDateString('es-AR', {
+            timeZone: 'America/Argentina/Buenos_Aires',
+        }),
         tone: ageTone(diffDays),
     };
 }

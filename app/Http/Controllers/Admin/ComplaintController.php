@@ -10,6 +10,7 @@ use App\Models\ComplaintType;
 use App\Models\Crew;
 use App\Models\Locality;
 use App\Models\OperationalZone;
+use App\Support\LocalDateTime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -102,7 +103,7 @@ class ComplaintController extends Controller
                     'type_label' => $photo->type->label(),
                     'url' => $photo->url(),
                     'original_name' => $photo->original_name,
-                    'taken_at' => $photo->taken_at?->format('d/m/Y H:i'),
+                    'taken_at' => LocalDateTime::format($photo->taken_at),
                 ])->values(),
                 'notification_logs' => $complaint->notificationLogs->map(fn ($log): array => [
                     'id' => $log->id,
