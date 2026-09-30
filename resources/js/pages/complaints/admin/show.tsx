@@ -366,6 +366,20 @@ export default function AdminComplaintShow({
                                             </p>
                                         </div>
                                     )}
+                                    {item.new_values
+                                        ?.internal_supplies_notes && (
+                                        <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900/60 dark:bg-amber-950/30">
+                                            <p className="text-xs font-semibold">
+                                                Observación interna de insumos
+                                            </p>
+                                            <p className="mt-1 whitespace-pre-wrap">
+                                                {
+                                                    item.new_values
+                                                        .internal_supplies_notes
+                                                }
+                                            </p>
+                                        </div>
+                                    )}
                                 </li>
                             ))}
                         </ol>
@@ -436,10 +450,10 @@ export default function AdminComplaintShow({
                                         {intervention.internal_supplies_notes && (
                                             <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
                                                 <p className="text-xs font-semibold">
-                                                    Insumos utilizados /
-                                                    informacion interna
+                                                    Observación interna de
+                                                    insumos
                                                 </p>
-                                                <p className="mt-1">
+                                                <p className="mt-1 whitespace-pre-wrap">
                                                     {
                                                         intervention.internal_supplies_notes
                                                     }

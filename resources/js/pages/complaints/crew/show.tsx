@@ -529,8 +529,8 @@ export default function CrewComplaintShow({
                             </FieldBlock>
 
                             <FieldBlock
-                                title="Observacion interna de insumos"
-                                help="Solo sera visible para administracion."
+                                title="Observación interna de insumos"
+                                help="Solo será visible para el equipo municipal."
                                 error={form.errors.internal_supplies_notes}
                             >
                                 <DictationTextarea
@@ -745,6 +745,19 @@ export default function CrewComplaintShow({
                                             {
                                                 event.new_values
                                                     .internal_observation
+                                            }
+                                        </p>
+                                    </div>
+                                )}
+                                {event.new_values?.internal_supplies_notes && (
+                                    <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900/60 dark:bg-amber-950/30">
+                                        <p className="text-xs font-semibold">
+                                            Observación interna de insumos
+                                        </p>
+                                        <p className="mt-1 whitespace-pre-wrap">
+                                            {
+                                                event.new_values
+                                                    .internal_supplies_notes
                                             }
                                         </p>
                                     </div>

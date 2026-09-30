@@ -68,6 +68,29 @@ test('citizen can create public lighting complaint and it is assigned to localit
         ->and($complaint->statusHistories()->where('action', 'created')->exists())->toBeTrue();
 });
 
+test('public complaint requires a location reference', function () {
+    $type = ComplaintType::where('name', 'Luminaria apagada')->firstOrFail();
+    $complaintsBefore = Complaint::count();
+    $validData = [
+        'full_name' => 'Ana Gómez',
+        'dni' => '30.123.456',
+        'phone' => '383 400 0000',
+        'complaint_type_id' => $type->id,
+        'latitude' => -28.3875664,
+        'longitude' => -65.7009248,
+    ];
+
+    $this->post(route('complaints.public.store', ['category' => 'alumbrado-publico']), $validData)
+        ->assertSessionHasErrors('location_reference');
+
+    $this->post(route('complaints.public.store', ['category' => 'alumbrado-publico']), [
+        ...$validData,
+        'location_reference' => '   ',
+    ])->assertSessionHasErrors('location_reference');
+
+    expect(Complaint::count())->toBe($complaintsBefore);
+});
+
 test('public tracking requires matching dni', function () {
     $complaint = Complaint::factory()->create(['dni' => '30123456']);
 
@@ -228,22 +251,27 @@ test('internal crew observations stay in staff details and never reach public tr
         ->post(route('admin.complaints.interventions.store', $complaint), [
             'status' => ComplaintStatus::InProgress->value,
             'observations' => 'Revisar cableado interno del poste.',
+            'internal_supplies_notes' => 'Usar lámpara del lote de reserva.',
             'send_whatsapp' => false,
         ])
         ->assertRedirect();
 
-    expect($complaint->interventions()->firstOrFail()->observations)->toBe('Revisar cableado interno del poste.');
+    expect($complaint->interventions()->firstOrFail()->observations)->toBe('Revisar cableado interno del poste.')
+        ->and($complaint->interventions()->firstOrFail()->internal_supplies_notes)->toBe('Usar lámpara del lote de reserva.');
 
     $this->actingAs($crewMember)
         ->get(route('crew.work.show', $complaint))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('complaint.history.0.new_values.internal_observation', 'Revisar cableado interno del poste.'));
+            ->where('complaint.history.0.new_values.internal_observation', 'Revisar cableado interno del poste.')
+            ->where('complaint.history.0.new_values.internal_supplies_notes', 'Usar lámpara del lote de reserva.'));
 
     $this->actingAs($admin)
         ->get(route('admin.complaints.show', $complaint))
         ->assertInertia(fn (Assert $page) => $page
             ->where('complaint.interventions.0.observations', 'Revisar cableado interno del poste.')
-            ->where('complaint.status_histories.0.new_values.internal_observation', 'Revisar cableado interno del poste.'));
+            ->where('complaint.interventions.0.internal_supplies_notes', 'Usar lámpara del lote de reserva.')
+            ->where('complaint.status_histories.0.new_values.internal_observation', 'Revisar cableado interno del poste.')
+            ->where('complaint.status_histories.0.new_values.internal_supplies_notes', 'Usar lámpara del lote de reserva.'));
 
     $complaint->statusHistories()->where('action', 'intervention')->update([
         'observation' => 'Revisar cableado interno del poste.',
@@ -251,6 +279,7 @@ test('internal crew observations stay in staff details and never reach public tr
 
     $this->get(URL::signedRoute('complaints.public.status', $complaint))
         ->assertDontSee('Revisar cableado interno del poste.')
+        ->assertDontSee('Usar lámpara del lote de reserva.')
         ->assertInertia(fn (Assert $page) => $page
             ->where('complaint.timeline.0.observation', null)
             ->missing('complaint.timeline.0.new_values')
@@ -261,6 +290,7 @@ test('internal crew observations stay in staff details and never reach public tr
         'dni' => '30123456',
     ])
         ->assertDontSee('Revisar cableado interno del poste.')
+        ->assertDontSee('Usar lámpara del lote de reserva.')
         ->assertInertia(fn (Assert $page) => $page
             ->where('complaint.timeline.0.observation', null)
             ->missing('complaint.timeline.0.new_values'));

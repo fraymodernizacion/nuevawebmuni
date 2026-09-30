@@ -280,12 +280,13 @@ export default function CreatePublicLightingComplaint({
                                 )}
                             </div>
                             <Field
-                                label="Referencia del lugar (opcional)"
+                                label="Referencia del lugar"
                                 error={errors.location_reference}
                                 className="sm:col-span-2"
                             >
                                 <input
                                     className="input"
+                                    required
                                     placeholder="Ej.: frente a la plaza, esquina de..., al lado de..."
                                     value={data.location_reference}
                                     onChange={(event) =>

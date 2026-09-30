@@ -60,7 +60,7 @@ class StorePublicComplaintRequest extends FormRequest
             ],
             'other_problem_description' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:4000'],
-            'location_reference' => ['nullable', 'string', 'max:255'],
+            'location_reference' => ['required', 'string', 'max:255'],
             'street' => ['nullable', 'string', 'max:160'],
             'street_number' => ['nullable', 'string', 'max:40'],
             'neighborhood' => ['nullable', 'string', 'max:160'],
@@ -77,6 +77,7 @@ class StorePublicComplaintRequest extends FormRequest
             'dni.required' => 'Ingresá tu DNI para registrar el reclamo.',
             'dni.digits_between' => 'Ingresá un DNI válido, solo con números.',
             'phone.regex' => 'Ingresá un celular argentino válido, con o sin 54 y sin el 0 inicial.',
+            'location_reference.required' => 'Ingresá una referencia del lugar del problema.',
             'latitude.required_without' => 'Marca el lugar del problema en el mapa.',
             'longitude.required_without' => 'Marca el lugar del problema en el mapa.',
         ];
