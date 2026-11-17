@@ -157,6 +157,7 @@ class IntakeRequestController extends Controller
 
         return Inertia::render('intake/admin/show', [
             'suggestedAssistanceIds' => $suggestedAssistanceIds,
+            'emailNotificationsEnabled' => (bool) config('mail.intake.enabled'),
             'request' => [
                 ...$intakeRequest->toArray(),
                 'status_label' => $intakeRequest->status->label(),
@@ -186,49 +187,53 @@ class IntakeRequestController extends Controller
     public function storeDerivations(StoreIntakeDerivationRequest $request, IntakeRequest $intakeRequest): RedirectResponse
     {
         $validated = $request->validated();
-        $previousStatus = $intakeRequest->status;
         $assistanceTypeIds = collect($validated['assistance_type_ids'])->map(fn (int|string $id): int => (int) $id)->values();
         $targetDepartmentIds = $request->targetDepartmentIds();
 
-        $intakeRequest->assistanceTypes()->syncWithoutDetaching($assistanceTypeIds);
+        DB::transaction(function () use ($request, $intakeRequest, $validated, $assistanceTypeIds, $targetDepartmentIds): void {
+            $lockedRequest = IntakeRequest::whereKey($intakeRequest->getKey())->lockForUpdate()->firstOrFail();
+            $previousStatus = $lockedRequest->status;
 
-        foreach ($targetDepartmentIds as $departmentId) {
-            $assistanceTypeId = IntakeAssistanceType::query()
-                ->whereIn('id', $assistanceTypeIds)
-                ->where('default_intake_department_id', $departmentId)
-                ->value('id') ?? $assistanceTypeIds->first();
+            $lockedRequest->assistanceTypes()->syncWithoutDetaching($assistanceTypeIds);
 
-            IntakeDerivation::firstOrCreate(
-                [
-                    'intake_request_id' => $intakeRequest->id,
-                    'intake_department_id' => $departmentId,
-                    'intake_assistance_type_id' => $assistanceTypeId,
+            foreach ($targetDepartmentIds as $departmentId) {
+                $assistanceTypeId = IntakeAssistanceType::query()
+                    ->whereIn('id', $assistanceTypeIds)
+                    ->where('default_intake_department_id', $departmentId)
+                    ->value('id') ?? $assistanceTypeIds->first();
+
+                IntakeDerivation::firstOrCreate(
+                    [
+                        'intake_request_id' => $lockedRequest->id,
+                        'intake_department_id' => $departmentId,
+                        'intake_assistance_type_id' => $assistanceTypeId,
+                    ],
+                    [
+                        'created_by' => $request->user()?->id,
+                        'last_updated_by' => $request->user()?->id,
+                        'operator_note' => $validated['operator_note'] ?? null,
+                        'status' => IntakeDerivationStatus::Pending,
+                    ],
+                );
+            }
+
+            $lockedRequest->update([
+                'status' => IntakeRequestStatus::Routed,
+            ]);
+
+            $lockedRequest->histories()->create([
+                'user_id' => $request->user()?->id,
+                'from_status' => $previousStatus,
+                'to_status' => IntakeRequestStatus::Routed,
+                'action' => 'derived',
+                'internal_comment' => $validated['operator_note'] ?? null,
+                'new_values' => [
+                    'assistance_type_ids' => $assistanceTypeIds->all(),
+                    'department_ids' => $targetDepartmentIds,
                 ],
-                [
-                    'created_by' => $request->user()?->id,
-                    'last_updated_by' => $request->user()?->id,
-                    'operator_note' => $validated['operator_note'] ?? null,
-                    'status' => IntakeDerivationStatus::Pending,
-                ],
-            );
-        }
-
-        $intakeRequest->update([
-            'status' => IntakeRequestStatus::Routed,
-        ]);
-
-        $intakeRequest->histories()->create([
-            'user_id' => $request->user()?->id,
-            'from_status' => $previousStatus,
-            'to_status' => IntakeRequestStatus::Routed,
-            'action' => 'derived',
-            'internal_comment' => $validated['operator_note'] ?? null,
-            'new_values' => [
-                'assistance_type_ids' => $assistanceTypeIds->all(),
-                'department_ids' => $targetDepartmentIds,
-            ],
-            'changed_at' => now(),
-        ]);
+                'changed_at' => now(),
+            ]);
+        });
 
         return back()->with('success', 'Solicitud derivada.');
     }

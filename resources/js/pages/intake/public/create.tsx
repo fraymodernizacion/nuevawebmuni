@@ -47,9 +47,11 @@ type IntakeSubtype = {
 export default function CreateIntakeRequest({
     type,
     initialSubtypeId,
+    emailNotificationsEnabled,
 }: {
     type: IntakeType;
     initialSubtypeId: number | null;
+    emailNotificationsEnabled: boolean;
 }) {
     const {
         data,
@@ -174,6 +176,9 @@ export default function CreateIntakeRequest({
             if (!data.applicant_phone.trim())
                 missing.applicant_phone =
                     'Ingresá un teléfono para que podamos contactarte.';
+            if (emailNotificationsEnabled && !data.applicant_email.trim())
+                missing.applicant_email =
+                    'Ingresá el correo donde querés recibir los avisos del trámite.';
             clearErrors();
             if (Object.keys(missing).length) {
                 setError(missing);
@@ -437,7 +442,12 @@ export default function CreateIntakeRequest({
                                     />
                                 </Field>
                                 <Field
-                                    label="Correo electrónico (opcional)"
+                                    label={
+                                        emailNotificationsEnabled
+                                            ? 'Correo electrónico para recibir avisos'
+                                            : 'Correo electrónico (opcional)'
+                                    }
+                                    required={emailNotificationsEnabled}
                                     error={errors.applicant_email}
                                 >
                                     <input

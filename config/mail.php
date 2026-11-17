@@ -16,6 +16,11 @@ return [
 
     'default' => env('MAIL_MAILER', 'log'),
 
+    'intake' => [
+        'enabled' => env('INTAKE_MAIL_ENABLED', false),
+        'from_address' => env('INTAKE_MAIL_FROM_ADDRESS', 'mesavirtual@fraymunicipalidad.gob.ar'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Mailer Configurations
@@ -36,6 +41,16 @@ return [
     */
 
     'mailers' => [
+
+        'intake' => [
+            'transport' => 'smtp',
+            'scheme' => env('INTAKE_MAIL_SCHEME', 'smtp'),
+            'host' => env('INTAKE_MAIL_HOST'),
+            'port' => (int) env('INTAKE_MAIL_PORT', 587),
+            'username' => env('INTAKE_MAIL_USERNAME'),
+            'password' => env('INTAKE_MAIL_PASSWORD'),
+            'timeout' => 20,
+        ],
 
         'smtp' => [
             'transport' => 'smtp',

@@ -51,6 +51,7 @@ class PublicIntakeRequestController extends Controller
 
         return Inertia::render('intake/public/create', [
             'type' => $this->typePayload($type),
+            'emailNotificationsEnabled' => (bool) config('mail.intake.enabled'),
             'initialSubtypeId' => $type->subtypes->firstWhere('id', $request->integer('subtipo'))?->id,
         ]);
     }

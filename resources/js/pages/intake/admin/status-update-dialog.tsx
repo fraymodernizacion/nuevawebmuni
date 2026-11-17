@@ -71,8 +71,10 @@ type Props = {
         status: string;
         status_label: string;
         area?: string | null;
+        applicant_email?: string | null;
     };
     statuses: { value: string; label: string }[];
+    emailNotificationsEnabled: boolean;
     onClose: () => void;
     onSaved: () => void;
 };
@@ -102,6 +104,7 @@ function makeSubmissionId() {
 export default function StatusUpdateDialog({
     request,
     statuses,
+    emailNotificationsEnabled,
     onClose,
     onSaved,
 }: Props) {
@@ -579,9 +582,15 @@ export default function StatusUpdateDialog({
                                     )}
                                     <p className="text-sm text-muted-foreground">
                                         El cambio se refleja en el seguimiento
-                                        público. Esta actualización no envía
-                                        notificaciones por WhatsApp ni por
-                                        correo.
+                                        público.
+                                        {emailNotificationsEnabled &&
+                                        request.applicant_email &&
+                                        form.data.status !== request.status
+                                            ? ' Se programará un aviso por correo al vecino.'
+                                            : emailNotificationsEnabled &&
+                                                !request.applicant_email
+                                              ? ' El trámite no tiene un correo registrado para enviar el aviso.'
+                                              : ''}
                                     </p>
                                 </div>
                             )}

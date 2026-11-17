@@ -30,7 +30,7 @@ class StorePublicIntakeRequestRequest extends FormRequest
             'applicant_name' => ['required', 'string', 'max:160'],
             'applicant_dni' => ['required', 'string', 'regex:/\A[0-9]{1,8}\z/'],
             'applicant_phone' => ['required', 'string', 'max:40'],
-            'applicant_email' => ['nullable', 'email', 'max:255'],
+            'applicant_email' => [config('mail.intake.enabled') ? 'required' : 'nullable', 'email', 'max:255'],
             'applicant_address' => ['nullable', 'string', 'max:255'],
             'intake_request_subtype_id' => ['nullable', 'integer', Rule::exists('intake_request_subtypes', 'id')],
             'summary' => ['nullable', 'string', 'max:5000'],
@@ -68,6 +68,8 @@ class StorePublicIntakeRequestRequest extends FormRequest
         return [
             'applicant_dni.required' => 'Ingresá el DNI de quien presenta la solicitud.',
             'applicant_dni.regex' => 'Ingresá solo los números de tu DNI, sin puntos ni espacios.',
+            'applicant_email.required' => 'Ingresá el correo donde querés recibir los avisos del trámite.',
+            'applicant_email.email' => 'Ingresá un correo electrónico válido.',
             'attachments.max' => 'Podés adjuntar hasta 5 archivos. Quitá los que sobran.',
             'attachments.*.uploaded' => 'El servidor no pudo recibir este archivo. Seleccionalo de nuevo y verificá que no supere los 10 MB.',
             'attachments.*.max' => 'Cada archivo debe pesar hasta 10 MB. Quitá el archivo que supera el límite.',

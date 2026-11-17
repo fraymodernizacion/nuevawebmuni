@@ -142,12 +142,14 @@ export default function AdminIntakeShow({
     assistanceTypes,
     departments,
     suggestedAssistanceIds,
+    emailNotificationsEnabled,
 }: {
     request: IntakeRequest;
     statuses: StatusOption[];
     assistanceTypes: AssistanceType[];
     departments: Department[];
     suggestedAssistanceIds: number[];
+    emailNotificationsEnabled: boolean;
 }) {
     const [tab, setTab] = useState<TabId>('solicitud');
     const [statusOpen, setStatusOpen] = useState(false);
@@ -709,6 +711,7 @@ export default function AdminIntakeShow({
                     key={request.id}
                     request={request}
                     statuses={statuses}
+                    emailNotificationsEnabled={emailNotificationsEnabled}
                     onClose={() => closeStatus()}
                     onSaved={() => closeStatus(true)}
                 />
