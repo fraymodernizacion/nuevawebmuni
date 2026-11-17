@@ -8,6 +8,19 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme inline {
+    --color-municipal-navy: #123d67;
+    --color-municipal-blue: #2e75b8;
+    --color-municipal-lime: #84bd1a;
+    --color-municipal-pink: #d93397;
+    --color-municipal-action: var(--municipal-action);
+    --color-municipal-on-action: var(--municipal-on-action);
+    --color-municipal-link: var(--municipal-link);
+    --color-municipal-surface: var(--municipal-surface);
+    --color-municipal-tint: var(--municipal-tint);
+    --color-municipal-outline: var(--municipal-outline);
+}
+
 @theme {
     --font-sans:
         'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
@@ -63,6 +76,12 @@
 }
 
 :root {
+    --municipal-action: #123d67;
+    --municipal-on-action: #ffffff;
+    --municipal-link: #123d67;
+    --municipal-surface: #f3f7fb;
+    --municipal-tint: #eaf3fb;
+    --municipal-outline: #bccfe2;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -99,6 +118,12 @@
 }
 
 .dark {
+    --municipal-action: #a8d4fc;
+    --municipal-on-action: #0f2238;
+    --municipal-link: #a8d4fc;
+    --municipal-surface: #101821;
+    --municipal-tint: #192c40;
+    --municipal-outline: #3b5875;
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.145 0 0);

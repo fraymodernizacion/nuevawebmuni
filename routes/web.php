@@ -37,12 +37,22 @@ Route::post('/reclamos/{category:slug}', [PublicComplaintController::class, 'sto
 
 Route::get('/mesa-de-entrada', [PublicIntakeRequestController::class, 'index'])->name('intake.public.index');
 Route::get('/mesa-de-entrada/consultar', [PublicIntakeRequestController::class, 'trackCreate'])->name('intake.public.track');
-Route::post('/mesa-de-entrada/consultar', [PublicIntakeRequestController::class, 'track'])->name('intake.public.track.submit');
-Route::get('/mesa-de-entrada/recibido/{intakeRequest}', [PublicIntakeRequestController::class, 'received'])->name('intake.public.received');
+Route::post('/mesa-de-entrada/consultar', [PublicIntakeRequestController::class, 'track'])
+    ->middleware('throttle:20,1,intake-tracking')
+    ->name('intake.public.track.submit');
+Route::get('/mesa-de-entrada/consultar/{code}', [PublicIntakeRequestController::class, 'status'])
+    ->middleware('cache.headers:private;no_store')
+    ->name('intake.public.status');
+Route::post('/mesa-de-entrada/consultar/{code}/documentacion', [PublicIntakeRequestController::class, 'storeDocumentation'])
+    ->middleware('throttle:10,1,intake-documentation')
+    ->name('intake.public.documentation.store');
+Route::get('/mesa-de-entrada/recibido/{intakeRequest}', [PublicIntakeRequestController::class, 'received'])->middleware('signed')->name('intake.public.received');
 Route::get('/mesa-de-entrada/solicitudes/{type:slug}', [PublicIntakeRequestController::class, 'create'])->name('intake.public.create');
 Route::post('/mesa-de-entrada/solicitudes/{type:slug}', [PublicIntakeRequestController::class, 'store'])->name('intake.public.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('mesa-de-entrada/adjuntos/{attachment}', [IntakeDepartmentWorkController::class, 'downloadAttachment'])->name('intake.attachments.download');
+
     Route::get('dashboard', fn () => redirect()->route(request()->user()->canUseCrewWork() ? 'crew.work.index' : 'admin.complaints.dashboard'))->name('dashboard');
 
     Route::get('i/{code}', [InventoryQrController::class, 'show'])

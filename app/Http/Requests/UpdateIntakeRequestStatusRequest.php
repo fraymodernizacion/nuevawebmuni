@@ -27,8 +27,32 @@ class UpdateIntakeRequestStatusRequest extends FormRequest
         return [
             'status' => ['required', Rule::enum(IntakeRequestStatus::class)],
             'area' => ['nullable', 'string', 'max:160'],
-            'public_comment' => ['nullable', 'string', 'max:5000'],
+            'public_comment' => [
+                Rule::requiredIf(in_array($this->input('status'), [
+                    IntakeRequestStatus::NeedsDocumentation->value,
+                    IntakeRequestStatus::Answered->value,
+                ], true)),
+                'nullable',
+                'string',
+                'max:5000',
+            ],
             'internal_comment' => ['nullable', 'string', 'max:5000'],
+            'submission_id' => ['nullable', 'uuid'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'status.required' => 'Seleccioná un estado.',
+            'status.enum' => 'Seleccioná un estado válido.',
+            'area.max' => 'El área o sector admite hasta 160 caracteres.',
+            'public_comment.required' => $this->input('status') === IntakeRequestStatus::NeedsDocumentation->value
+                ? 'Indicá qué documentación debe presentar el vecino.'
+                : 'Escribí la respuesta que verá el vecino.',
+            'public_comment.max' => 'El mensaje admite hasta 5000 caracteres.',
+            'internal_comment.max' => 'La nota interna admite hasta 5000 caracteres.',
         ];
     }
 }

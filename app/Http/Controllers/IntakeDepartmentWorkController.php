@@ -5,15 +5,34 @@ namespace App\Http\Controllers;
 use App\Enums\IntakeDerivationStatus;
 use App\Http\Requests\UpdateIntakeDerivationRequest;
 use App\Models\IntakeDerivation;
+use App\Models\IntakeRequestAttachment;
 use App\Support\LocalDateTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class IntakeDepartmentWorkController extends Controller
 {
+    public function downloadAttachment(Request $request, IntakeRequestAttachment $attachment): StreamedResponse
+    {
+        $user = $request->user();
+        $departmentId = $user?->intake_department_id;
+        abort_unless($user?->canUseIntakeManagement() || (
+            $user?->canUseIntakeDepartmentPanel()
+            && $departmentId
+            && $attachment->request->derivations()->where('intake_department_id', $departmentId)->exists()
+        ), 403);
+
+        $disk = Storage::disk($attachment->disk);
+        abort_unless($disk->exists($attachment->path), 404);
+
+        return $disk->download($attachment->path, $attachment->original_name, ['Cache-Control' => 'private, no-store']);
+    }
+
     public function index(Request $request): Response
     {
         abort_unless($request->user()?->canUseIntakeDepartmentPanel(), 403);
@@ -47,6 +66,7 @@ class IntakeDepartmentWorkController extends Controller
             'assistanceType:id,name,color',
             'histories.user:id,name',
             'request.type',
+            'request.subtype:id,schema',
             'request.attachments',
             'request.histories.user:id,name',
         ]);

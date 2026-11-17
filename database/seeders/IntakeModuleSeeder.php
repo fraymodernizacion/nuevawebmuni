@@ -78,6 +78,8 @@ class IntakeModuleSeeder extends Seeder
             );
         }
 
+        $this->call(IntakeNovemberCatalogSeeder::class);
+
         User::updateOrCreate(
             ['email' => 'servicios@municipio.test'],
             [

@@ -6,12 +6,17 @@ use App\Enums\IntakeRequestStatus;
 use App\Http\Requests\StorePublicIntakeRequestRequest;
 use App\Http\Requests\TrackIntakeRequestRequest;
 use App\Models\IntakeRequest;
+use App\Models\IntakeRequestHistory;
 use App\Models\IntakeRequestSubtype;
 use App\Models\IntakeRequestType;
 use App\Support\LocalDateTime;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,7 +39,7 @@ class PublicIntakeRequestController extends Controller
         ]);
     }
 
-    public function create(IntakeRequestType $type): Response
+    public function create(Request $request, IntakeRequestType $type): Response
     {
         abort_unless($type->active, 404);
 
@@ -46,6 +51,7 @@ class PublicIntakeRequestController extends Controller
 
         return Inertia::render('intake/public/create', [
             'type' => $this->typePayload($type),
+            'initialSubtypeId' => $type->subtypes->firstWhere('id', $request->integer('subtipo'))?->id,
         ]);
     }
 
@@ -53,57 +59,56 @@ class PublicIntakeRequestController extends Controller
     {
         abort_unless($type->active, 404);
 
-        $intakeRequest = DB::transaction(function () use ($type, $request): IntakeRequest {
-            $validated = $request->validated();
-            $subtype = $request->selectedSubtype();
-            $fields = $validated['fields'] ?? [];
-            $payload = [
-                ...$fields,
-                ...($subtype ? [
-                    'subtype' => [
-                        'id' => $subtype->id,
-                        'slug' => $subtype->slug,
-                        'name' => $subtype->name,
-                    ],
-                ] : []),
-            ];
-            $intakeRequest = IntakeRequest::create([
-                ...Arr::except($validated, ['fields', 'attachments', 'intake_request_subtype_id', 'summary']),
-                'intake_request_type_id' => $type->id,
-                'intake_request_subtype_id' => $subtype?->id,
-                'public_code' => $this->nextPublicCode(),
-                'status' => IntakeRequestStatus::Received,
-                'subject' => $subtype?->name ?? $type->name,
-                'summary' => $this->summaryFrom($validated['summary'] ?? null, $fields, $subtype, $type),
-                'payload' => $payload,
-            ]);
+        $storedPaths = [];
 
-            $intakeRequest->histories()->create([
-                'to_status' => IntakeRequestStatus::Received,
-                'action' => 'created',
-                'public_comment' => 'Solicitud recibida por Mesa de Entrada Virtual.',
-                'new_values' => [
-                    'type' => $type->name,
-                    'subtype' => $subtype?->name,
-                ],
-                'changed_at' => now(),
-            ]);
-
-            foreach ($request->file('attachments', []) as $file) {
-                $intakeRequest->attachments()->create([
-                    'disk' => 'public',
-                    'path' => $file->store("intake/{$intakeRequest->public_code}", 'public'),
-                    'original_name' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getClientMimeType(),
-                    'size' => $file->getSize(),
-                    'type' => 'initial',
+        try {
+            $intakeRequest = DB::transaction(function () use ($type, $request, &$storedPaths): IntakeRequest {
+                $validated = $request->validated();
+                $subtype = $request->selectedSubtype();
+                $fields = $validated['fields'] ?? [];
+                $payload = [
+                    ...$fields,
+                    ...($subtype ? [
+                        'subtype' => [
+                            'id' => $subtype->id,
+                            'slug' => $subtype->slug,
+                            'name' => $subtype->name,
+                        ],
+                    ] : []),
+                ];
+                $intakeRequest = IntakeRequest::create([
+                    ...Arr::except($validated, ['fields', 'attachments', 'intake_request_subtype_id', 'summary']),
+                    'intake_request_type_id' => $type->id,
+                    'intake_request_subtype_id' => $subtype?->id,
+                    'public_code' => $this->nextPublicCode(),
+                    'status' => IntakeRequestStatus::Received,
+                    'subject' => $subtype?->name ?? $type->name,
+                    'summary' => $this->summaryFrom($validated['summary'] ?? null, $fields, $subtype, $type),
+                    'payload' => $payload,
                 ]);
-            }
 
-            return $intakeRequest;
-        });
+                $intakeRequest->histories()->create([
+                    'to_status' => IntakeRequestStatus::Received,
+                    'action' => 'created',
+                    'public_comment' => 'Solicitud recibida por Mesa de Entrada Virtual.',
+                    'new_values' => [
+                        'type' => $type->name,
+                        'subtype' => $subtype?->name,
+                    ],
+                    'changed_at' => now(),
+                ]);
 
-        return redirect()->route('intake.public.received', $intakeRequest);
+                $this->storeAttachments($intakeRequest, $request->file('attachments', []), 'initial', $storedPaths);
+
+                return $intakeRequest;
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($storedPaths);
+
+            throw $exception;
+        }
+
+        return redirect()->to(URL::temporarySignedRoute('intake.public.received', now()->addMinutes(30), $intakeRequest));
     }
 
     public function received(IntakeRequest $intakeRequest): Response
@@ -111,45 +116,169 @@ class PublicIntakeRequestController extends Controller
         return Inertia::render('intake/public/received', [
             'request' => [
                 'public_code' => $intakeRequest->public_code,
-                'applicant_phone' => $intakeRequest->applicant_phone,
             ],
         ]);
     }
 
     public function trackCreate(): Response
     {
-        return Inertia::render('intake/public/track');
+        return Inertia::render('intake/public/track', [
+            'currentYear' => LocalDateTime::today()->format('Y'),
+        ]);
     }
 
-    public function track(TrackIntakeRequestRequest $request): Response|RedirectResponse
+    public function track(TrackIntakeRequestRequest $request): RedirectResponse
     {
-        $validated = $request->validated();
-        $intakeRequest = IntakeRequest::with(['type:id,name', 'histories'])
-            ->where('public_code', $validated['public_code'])
-            ->where('applicant_phone', $validated['applicant_phone'])
-            ->first();
+        $intakeRequest = IntakeRequest::where('public_code', $request->publicCode())->first();
+        $storedDni = preg_replace('/[.\s]+/u', '', (string) $intakeRequest?->applicant_dni) ?? '';
 
-        if (! $intakeRequest) {
+        if (! $intakeRequest || ! hash_equals($storedDni, $request->validated('applicant_dni'))) {
             return back()->withErrors([
-                'public_code' => 'No encontramos una solicitud con ese numero y telefono.',
+                'number' => 'No encontramos una solicitud con ese año, número y DNI. Revisá los datos e intentá de nuevo.',
             ]);
         }
+
+        $request->session()->put('intake_tracking', [
+            'public_code' => $intakeRequest->public_code,
+            'expires_at' => now()->addMinutes(30)->timestamp,
+        ]);
+
+        return to_route('intake.public.status', $intakeRequest->public_code);
+    }
+
+    public function status(Request $request, string $code): Response|RedirectResponse
+    {
+        if (! $this->canTrack($request, $code)) {
+            return to_route('intake.public.track')->withErrors([
+                'number' => 'Ingresá tu número de trámite y tu DNI para consultar el estado.',
+            ]);
+        }
+
+        $intakeRequest = IntakeRequest::with('type:id,name')->where('public_code', $code)->firstOrFail();
+        $histories = $intakeRequest->histories()->orderByDesc('id')->get();
+        $latest = $histories->first();
+        $documentationReceived = $intakeRequest->status === IntakeRequestStatus::UnderReview && $latest?->action === 'documentation_received';
+        $message = match ($intakeRequest->status) {
+            IntakeRequestStatus::NeedsDocumentation => $latest?->to_status === IntakeRequestStatus::NeedsDocumentation && filled($latest->public_comment) ? $latest : null,
+            IntakeRequestStatus::Answered => $histories->first(fn (IntakeRequestHistory $history): bool => $history->to_status === IntakeRequestStatus::Answered && filled($history->public_comment)),
+            default => $histories->first(fn (IntakeRequestHistory $history): bool => $history->action !== 'created' && filled($history->public_comment)),
+        };
 
         return Inertia::render('intake/public/status', [
             'request' => [
                 'public_code' => $intakeRequest->public_code,
                 'type' => $intakeRequest->type->name,
                 'status' => $intakeRequest->status->label(),
+                'status_code' => $intakeRequest->status->value,
+                'updated_at' => LocalDateTime::format($latest?->changed_at ?? $intakeRequest->updated_at),
+                'response' => $message && ! $documentationReceived ? [
+                    'id' => $message->id,
+                    'text' => $message->public_comment,
+                    'date' => LocalDateTime::format($message->changed_at),
+                ] : null,
+                'documentation_received' => $documentationReceived,
+                'documentation_request_id' => $intakeRequest->status === IntakeRequestStatus::NeedsDocumentation ? $latest?->id : null,
                 'summary' => $intakeRequest->summary,
                 'created_at' => LocalDateTime::format($intakeRequest->created_at),
-                'timeline' => $intakeRequest->histories->map(fn ($history): array => [
+                'timeline' => $histories->map(fn (IntakeRequestHistory $history): array => [
+                    'id' => $history->id,
                     'action' => $history->action,
+                    'status_code' => $history->to_status?->value,
                     'status_label' => $history->to_status?->label(),
                     'date' => LocalDateTime::format($history->changed_at),
                     'comment' => $history->public_comment,
                 ])->values(),
             ],
         ]);
+    }
+
+    public function storeDocumentation(Request $request, string $code): RedirectResponse
+    {
+        if (! $this->canTrack($request, $code)) {
+            return to_route('intake.public.track')->withErrors([
+                'number' => 'Volvé a ingresar tu número de trámite y tu DNI para adjuntar documentación.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'documentation_request_id' => ['nullable', 'integer', 'min:1'],
+            'attachments' => ['required', 'array', 'min:1', 'max:5'],
+            'attachments.*' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx', 'max:10240'],
+        ], [
+            'attachments.required' => 'Elegí al menos un archivo.',
+            'attachments.max' => 'Podés adjuntar hasta 5 archivos por pedido.',
+            'attachments.*.uploaded' => 'No pudimos recibir este archivo. Seleccionalo de nuevo y verificá que pese hasta 10 MB.',
+            'attachments.*.max' => 'Cada archivo debe pesar hasta 10 MB.',
+            'attachments.*.mimes' => 'Elegí archivos PDF, Word o imágenes JPG, PNG o WebP.',
+        ]);
+
+        $expectedHistoryId = isset($validated['documentation_request_id']) ? (int) $validated['documentation_request_id'] : null;
+        $storedPaths = [];
+
+        try {
+            $accepted = DB::transaction(function () use ($code, $validated, $expectedHistoryId, &$storedPaths): bool {
+                $lockedRequest = IntakeRequest::where('public_code', $code)->lockForUpdate()->firstOrFail();
+                $latestHistoryId = $lockedRequest->histories()->orderByDesc('id')->value('id');
+
+                if ($lockedRequest->status !== IntakeRequestStatus::NeedsDocumentation || $latestHistoryId !== $expectedHistoryId) {
+                    return false;
+                }
+
+                $this->storeAttachments($lockedRequest, $validated['attachments'], 'supplemental', $storedPaths);
+                $lockedRequest->update(['status' => IntakeRequestStatus::UnderReview]);
+                $lockedRequest->histories()->create([
+                    'from_status' => IntakeRequestStatus::NeedsDocumentation,
+                    'to_status' => IntakeRequestStatus::UnderReview,
+                    'action' => 'documentation_received',
+                    'new_values' => ['attachment_count' => count($storedPaths)],
+                    'changed_at' => now(),
+                ]);
+
+                return true;
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($storedPaths);
+
+            throw $exception;
+        }
+
+        $redirect = to_route('intake.public.status', $code);
+
+        return $accepted ? $redirect : $redirect->withErrors([
+            'documentation_request_id' => 'El pedido de documentación cambió. Revisá el estado actual antes de volver a enviar archivos.',
+        ]);
+    }
+
+    private function canTrack(Request $request, string $code): bool
+    {
+        $tracking = $request->session()->get('intake_tracking', []);
+
+        return ($tracking['public_code'] ?? null) === $code
+            && ($tracking['expires_at'] ?? 0) > now()->timestamp;
+    }
+
+    /**
+     * @param  array<UploadedFile>  $files
+     * @param  list<string>  $storedPaths
+     */
+    private function storeAttachments(IntakeRequest $intakeRequest, array $files, string $type, array &$storedPaths): void
+    {
+        foreach ($files as $file) {
+            $path = $file->store("intake/{$intakeRequest->public_code}", 'local');
+            if ($path === false) {
+                throw new \RuntimeException('No se pudo guardar un adjunto de Mesa de Entrada.');
+            }
+            $storedPaths[] = $path;
+
+            $intakeRequest->attachments()->create([
+                'disk' => 'local',
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+                'type' => $type,
+            ]);
+        }
     }
 
     /**

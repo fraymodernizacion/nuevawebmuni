@@ -1,15 +1,47 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Check, Clipboard, Download, GitBranch, Save, Tags } from 'lucide-react';
-import { FormEvent } from 'react';
+import {
+    ArrowLeft,
+    ArrowRight,
+    CalendarDays,
+    Check,
+    Clipboard,
+    Download,
+    Eye,
+    FileCheck,
+    FileIcon,
+    FileImage,
+    FileQuestion,
+    FileText,
+    GitBranch,
+    History,
+    Inbox,
+    MessageSquare,
+    PencilLine,
+    Settings2,
+    Tags,
+    X,
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
 import { storeDerivations } from '@/actions/App/Http/Controllers/Admin/IntakeRequestController';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { useClipboard } from '@/hooks/use-clipboard';
 import {
     formatIntakeDate,
     intakeDerivationStatusClass,
     intakeStatusClass,
 } from '@/lib/intake-labels';
-import { index } from '@/routes/admin/intake';
-import { update } from '@/routes/admin/intake/status';
+import { cn } from '@/lib/utils';
+import { index, notifications } from '@/routes/admin/intake';
+import StatusUpdateDialog from './status-update-dialog';
 
 type IntakeRequest = {
     id: number;
@@ -26,6 +58,7 @@ type IntakeRequest = {
     subject: string;
     summary: string;
     payload?: Record<string, unknown>;
+    subtype?: { schema?: { name: string; label: string }[] } | null;
     created_at: string;
     type: {
         name: string;
@@ -94,515 +127,1137 @@ type DerivationHistory = {
     user?: { name: string } | null;
 };
 
+const tabs = [
+    { id: 'solicitud', label: 'Solicitud', icon: FileText },
+    { id: 'historial', label: 'Historial', icon: History },
+    { id: 'gestion', label: 'Gestión', icon: Settings2 },
+] as const;
+
+type TabId = (typeof tabs)[number]['id'];
+type StatusOption = { value: string; label: string };
+
 export default function AdminIntakeShow({
     request,
     statuses,
     assistanceTypes,
     departments,
+    suggestedAssistanceIds,
 }: {
     request: IntakeRequest;
-    statuses: { value: string; label: string }[];
+    statuses: StatusOption[];
     assistanceTypes: AssistanceType[];
     departments: Department[];
+    suggestedAssistanceIds: number[];
 }) {
-    const status = useForm({
-        status: request.status,
-        area: request.area ?? '',
-        public_comment: '',
-        internal_comment: '',
-    });
+    const [tab, setTab] = useState<TabId>('solicitud');
+    const [statusOpen, setStatusOpen] = useState(false);
+    const [statusSaved, setStatusSaved] = useState(false);
+    const [copyFailed, setCopyFailed] = useState(false);
+    const headerStatusButton = useRef<HTMLButtonElement>(null);
+    const statusOpener = useRef<HTMLButtonElement>(null);
     const derivation = useForm({
-        assistance_type_ids:
-            request.assistance_types?.map((type) => type.id) ??
-            ([] as number[]),
+        assistance_type_ids: request.assistance_types?.length
+            ? request.assistance_types.map((type) => type.id)
+            : suggestedAssistanceIds,
         department_ids: [] as number[],
         operator_note: '',
     });
     const [copiedText, copyToClipboard] = useClipboard();
     const whatsAppSummary = buildWhatsAppSummary(request);
-    const wasWhatsAppSummaryCopied = copiedText === whatsAppSummary;
+    const copied = copiedText === whatsAppSummary;
+    const busy = derivation.processing;
+    const assignedAreas = [
+        ...new Set(request.derivations.map((item) => item.department.name)),
+    ];
+    const suggestedAreas = [
+        ...new Set(
+            assistanceTypes.flatMap((type) =>
+                suggestedAssistanceIds.includes(type.id) &&
+                type.default_department
+                    ? [type.default_department.name]
+                    : [],
+            ),
+        ),
+    ];
+    const selectedTypes = [
+        ...new Map(
+            [...(request.assistance_types ?? []), ...assistanceTypes].map(
+                (type) => [type.id, type],
+            ),
+        ).values(),
+    ].filter((type) => derivation.data.assistance_type_ids.includes(type.id));
+    const targetAreas = [
+        ...new Set([
+            ...selectedTypes.flatMap((type) =>
+                type.default_department ? [type.default_department.name] : [],
+            ),
+            ...departments
+                .filter((area) =>
+                    derivation.data.department_ids.includes(area.id),
+                )
+                .map((area) => area.name),
+        ]),
+    ];
 
-    function submit(event: FormEvent) {
-        event.preventDefault();
-        status.patch(update.url(request.id));
+    function openManagement() {
+        setTab('gestion');
+        requestAnimationFrame(() =>
+            document.getElementById('tipificar')?.focus(),
+        );
+    }
+
+    function openStatus(button: HTMLButtonElement) {
+        statusOpener.current = button;
+        setStatusSaved(false);
+        setStatusOpen(true);
+    }
+
+    function closeStatus(saved = false) {
+        setStatusOpen(false);
+        if (saved) {
+            setStatusSaved(true);
+            setTab('historial');
+        }
+        requestAnimationFrame(() => {
+            const button = saved
+                ? headerStatusButton.current
+                : statusOpener.current;
+            button?.focus();
+        });
+    }
+
+    function handleTabKeyDown(
+        event: KeyboardEvent<HTMLButtonElement>,
+        position: number,
+    ) {
+        const keys: Record<string, number> = {
+            ArrowLeft: (position + tabs.length - 1) % tabs.length,
+            ArrowRight: (position + 1) % tabs.length,
+            Home: 0,
+            End: tabs.length - 1,
+        };
+        const nextTab = tabs[keys[event.key]];
+
+        if (nextTab) {
+            event.preventDefault();
+            setTab(nextTab.id);
+            document.getElementById('tab-' + nextTab.id)?.focus();
+        }
     }
 
     function submitDerivation(event: FormEvent) {
         event.preventDefault();
+        if (!derivation.data.assistance_type_ids.length) {
+            derivation.setError(
+                'assistance_type_ids',
+                'Seleccioná al menos una tipificación.',
+            );
+            return;
+        }
+
         derivation.post(storeDerivations.url(request.id), {
             preserveScroll: true,
-            onSuccess: () => derivation.setData('operator_note', ''),
+            onSuccess: () => {
+                derivation.setData('operator_note', '');
+                setStatusSaved(false);
+            },
         });
-    }
-
-    function toggleAssistanceType(id: number) {
-        const selected = derivation.data.assistance_type_ids.includes(id)
-            ? derivation.data.assistance_type_ids.filter((item) => item !== id)
-            : [...derivation.data.assistance_type_ids, id];
-
-        derivation.setData('assistance_type_ids', selected);
-    }
-
-    function toggleDepartment(id: number) {
-        const selected = derivation.data.department_ids.includes(id)
-            ? derivation.data.department_ids.filter((item) => item !== id)
-            : [...derivation.data.department_ids, id];
-
-        derivation.setData('department_ids', selected);
     }
 
     return (
         <>
             <Head title={request.public_code} />
-            <div className="grid gap-4 p-4 xl:grid-cols-[1fr_380px]">
-                <main className="flex flex-col gap-4">
-                    <section className="rounded-lg border bg-card p-4">
-                        <Link
-                            href={index()}
-                            className="text-sm font-medium text-blue-700 dark:text-blue-300"
-                        >
-                            Volver a Mesa de Entrada
-                        </Link>
-                        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <p className="text-sm text-muted-foreground">
-                                    {request.public_code} ·{' '}
+            <div className="min-w-0 flex-1 bg-municipal-surface">
+                <div className="mx-auto grid max-w-7xl min-w-0 gap-4 p-3 sm:gap-5 sm:p-6">
+                    <header className="grid gap-4 rounded-xl border border-t-4 border-municipal-outline border-t-municipal-lime bg-card p-4 sm:p-6">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <Button
+                                asChild
+                                variant="ghost"
+                                className="min-h-11 px-2"
+                            >
+                                <Link href={index()}>
+                                    <ArrowLeft aria-hidden="true" /> Volver a
+                                    Mesa de Entrada
+                                </Link>
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="min-h-11"
+                                onClick={async () =>
+                                    setCopyFailed(
+                                        !(await copyToClipboard(
+                                            whatsAppSummary,
+                                        )),
+                                    )
+                                }
+                            >
+                                {copied ? (
+                                    <Check aria-hidden="true" />
+                                ) : (
+                                    <Clipboard aria-hidden="true" />
+                                )}
+                                {copied
+                                    ? 'Resumen copiado'
+                                    : 'Copiar para WhatsApp'}
+                            </Button>
+                            <p
+                                role="status"
+                                className={
+                                    copyFailed
+                                        ? 'w-full text-sm text-destructive'
+                                        : 'sr-only'
+                                }
+                            >
+                                {copyFailed
+                                    ? 'No se pudo copiar el resumen. Intentá nuevamente.'
+                                    : copied
+                                      ? 'Resumen copiado al portapapeles.'
+                                      : ''}
+                            </p>
+                        </div>
+                        <div className="grid gap-2">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                                <p className="font-mono text-sm font-semibold text-municipal-link">
+                                    {request.public_code}
+                                </p>
+                                <span
+                                    className={cn(
+                                        'rounded-md border px-2.5 py-1 text-sm font-semibold',
+                                        intakeStatusClass(request.status),
+                                    )}
+                                >
+                                    {request.status_label}
+                                </span>
+                            </div>
+                            <h1 className="text-2xl font-semibold tracking-tight break-words sm:text-3xl">
+                                {request.subject}
+                            </h1>
+                            <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                                <p className="flex items-center gap-2">
+                                    <CalendarDays
+                                        aria-hidden="true"
+                                        className="size-4 shrink-0"
+                                    />{' '}
+                                    Ingreso:{' '}
                                     {formatIntakeDate(request.created_at)}
                                 </p>
-                                <h1 className="text-2xl font-semibold tracking-normal">
-                                    {request.subject}
-                                </h1>
+                                <p className="flex items-start gap-2">
+                                    <GitBranch
+                                        aria-hidden="true"
+                                        className="mt-0.5 size-4 shrink-0"
+                                    />{' '}
+                                    {assignedAreas.length
+                                        ? 'Derivado a: ' +
+                                          assignedAreas.join(' · ')
+                                        : 'Sin derivaciones registradas'}
+                                </p>
                             </div>
-                            <span
-                                className={`rounded-md border px-3 py-1 text-sm font-semibold ${intakeStatusClass(request.status)}`}
+                        </div>
+                        <div className="grid gap-2 sm:flex sm:flex-wrap">
+                            <Button
+                                type="button"
+                                className="min-h-11 bg-municipal-action text-municipal-on-action hover:bg-municipal-action/90"
+                                ref={headerStatusButton}
+                                disabled={busy}
+                                onClick={(event) =>
+                                    openStatus(event.currentTarget)
+                                }
                             >
-                                {request.status_label}
-                            </span>
+                                <PencilLine aria-hidden="true" /> Cambiar estado
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="min-h-11"
+                                onClick={openManagement}
+                            >
+                                <Tags aria-hidden="true" /> Tipificar y derivar
+                            </Button>
                         </div>
-                    </section>
+                    </header>
 
-                    <section className="grid gap-4 lg:grid-cols-2">
-                        <Panel title="Vecino">
-                            <Info
-                                label="Nombre y apellido"
-                                value={request.applicant_name}
-                            />
-                            <Info
-                                label="Telefono"
-                                value={request.applicant_phone}
-                            />
-                            {request.applicant_dni && (
-                                <Info
-                                    label="DNI / CUIT"
-                                    value={request.applicant_dni}
-                                />
-                            )}
-                            {request.applicant_email && (
-                                <Info
-                                    label="Email"
-                                    value={request.applicant_email}
-                                />
-                            )}
-                            {request.applicant_address && (
-                                <Info
-                                    label="Domicilio"
-                                    value={request.applicant_address}
-                                />
-                            )}
-                        </Panel>
-                        <Panel title="Solicitud">
-                            <Info
-                                label="Categoria"
-                                value={request.type.category}
-                            />
-                            <Info label="Tipo" value={request.type.name} />
-                            <Info
-                                label="Area"
-                                value={request.area ?? 'Sin derivar'}
-                            />
-                            <p className="rounded-md bg-background p-3 text-sm">
-                                {request.summary}
-                            </p>
-                        </Panel>
-                    </section>
+                    <p
+                        role="status"
+                        className={
+                            statusSaved
+                                ? 'rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200'
+                                : 'sr-only'
+                        }
+                    >
+                        {statusSaved
+                            ? 'Estado actualizado. El movimiento se registró en el historial.'
+                            : ''}
+                    </p>
 
-                    <Panel title="Datos cargados">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            {Object.entries(request.payload ?? {}).map(
-                                ([key, value]) => (
+                    <div
+                        role="tablist"
+                        aria-label="Detalle del trámite"
+                        className="grid grid-cols-3 gap-1 border-b"
+                    >
+                        {tabs.map(({ id, label, icon: Icon }, position) => (
+                            <Button
+                                key={id}
+                                type="button"
+                                id={'tab-' + id}
+                                role="tab"
+                                aria-selected={tab === id}
+                                aria-controls={'panel-' + id}
+                                tabIndex={tab === id ? 0 : -1}
+                                variant="ghost"
+                                className="min-h-11 min-w-0 rounded-b-none border-b-2 border-transparent px-1 aria-selected:border-municipal-link aria-selected:bg-card aria-selected:text-municipal-link"
+                                onKeyDown={(event) =>
+                                    handleTabKeyDown(event, position)
+                                }
+                                onClick={() => setTab(id)}
+                            >
+                                <Icon
+                                    aria-hidden="true"
+                                    className="hidden size-4 sm:block"
+                                />{' '}
+                                {label}
+                            </Button>
+                        ))}
+                    </div>
+
+                    <div
+                        id="panel-solicitud"
+                        role="tabpanel"
+                        aria-labelledby="tab-solicitud"
+                        tabIndex={0}
+                        hidden={tab !== 'solicitud'}
+                    >
+                        <div className="grid gap-4">
+                            <div className="grid items-start gap-4 lg:grid-cols-2">
+                                <Panel title="Datos del vecino">
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <Info
+                                            label="Nombre y apellido"
+                                            value={request.applicant_name}
+                                        />
+                                        <Info
+                                            label="Teléfono"
+                                            value={request.applicant_phone}
+                                        />
+                                        {request.applicant_dni && (
+                                            <Info
+                                                label="DNI / CUIT"
+                                                value={request.applicant_dni}
+                                            />
+                                        )}
+                                        {request.applicant_email && (
+                                            <Info
+                                                label="Correo electrónico"
+                                                value={request.applicant_email}
+                                            />
+                                        )}
+                                        {request.applicant_address && (
+                                            <Info
+                                                label="Domicilio"
+                                                value={
+                                                    request.applicant_address
+                                                }
+                                            />
+                                        )}
+                                    </div>
+                                </Panel>
+                                <Panel title="Datos de la solicitud">
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <Info
+                                            label="Categoría"
+                                            value={request.type.category}
+                                        />
+                                        <Info
+                                            label="Tipo de trámite"
+                                            value={request.type.name}
+                                        />
+                                        {request.area && (
+                                            <Info
+                                                label="Área / sector"
+                                                value={request.area}
+                                            />
+                                        )}
+                                    </div>
                                     <Info
-                                        key={key}
-                                        label={fieldLabel(request, key)}
-                                        value={value}
+                                        label="Descripción original"
+                                        value={request.summary}
                                     />
-                                ),
-                            )}
-                            {Object.keys(request.payload ?? {}).length ===
-                                0 && (
-                                <p className="text-sm text-muted-foreground">
-                                    No se cargaron datos adicionales.
-                                </p>
-                            )}
-                        </div>
-                    </Panel>
-
-                    <Panel title="Tipificacion y derivaciones">
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <div className="rounded-md border bg-background p-3">
-                                <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                                    <Tags className="size-4" />
-                                    Tipificaciones
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {(request.assistance_types ?? []).map(
-                                        (type) => (
-                                            <span
-                                                key={type.id}
-                                                className="rounded-md border px-2 py-1 text-xs font-semibold"
-                                                style={{ color: type.color }}
-                                            >
-                                                {type.name}
-                                            </span>
-                                        ),
-                                    )}
-                                    {(request.assistance_types ?? []).length ===
-                                        0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Todavia no fue tipificada.
-                                        </p>
-                                    )}
-                                </div>
+                                </Panel>
                             </div>
-                            <div className="rounded-md border bg-background p-3">
-                                <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                                    <GitBranch className="size-4" />
-                                    Derivaciones
-                                </div>
-                                <div className="grid gap-2">
-                                    {request.derivations.map((item) => (
-                                        <div
-                                            key={item.id}
-                                            className="rounded-md border p-2 text-sm"
+                            <Panel title="Campos del formulario">
+                                {Object.keys(request.payload ?? {}).length ? (
+                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                        {Object.entries(
+                                            request.payload ?? {},
+                                        ).map(([key, value]) => (
+                                            <Info
+                                                key={key}
+                                                label={fieldLabel(request, key)}
+                                                value={value}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">
+                                        No hay datos adicionales.
+                                    </p>
+                                )}
+                            </Panel>
+                            <Panel title="Adjuntos">
+                                <Attachments items={request.attachments} />
+                            </Panel>
+                        </div>
+                    </div>
+
+                    <div
+                        id="panel-historial"
+                        role="tabpanel"
+                        aria-labelledby="tab-historial"
+                        tabIndex={0}
+                        hidden={tab !== 'historial'}
+                    >
+                        <div className="grid gap-4">
+                            <Panel title="Historial del trámite">
+                                <RequestHistory
+                                    items={request.histories}
+                                    statuses={statuses}
+                                />
+                            </Panel>
+                            {request.derivations.length > 0 && (
+                                <Panel title="Historial por área">
+                                    <AreaDerivations
+                                        derivations={request.derivations}
+                                    />
+                                    {request.derivations.some(
+                                        (item) => item.histories.length > 0,
+                                    ) && (
+                                        <Link
+                                            href={notifications()}
+                                            className="w-fit text-sm font-medium text-municipal-link underline underline-offset-4"
                                         >
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <strong>
-                                                        {item.department.name}
-                                                    </strong>
-                                                    <p className="text-muted-foreground">
-                                                        {
-                                                            item.assistance_type
-                                                                ?.name
-                                                        }
-                                                    </p>
-                                                </div>
-                                                <span
-                                                    className={`rounded-md border px-2 py-1 text-xs font-semibold ${intakeDerivationStatusClass(item.status)}`}
-                                                >
-                                                    {item.status_label}
-                                                </span>
-                                            </div>
-                                            {item.department_response && (
-                                                <p className="mt-2 text-muted-foreground">
-                                                    {item.department_response}
-                                                </p>
-                                            )}
-                                            {item.histories.length > 0 && (
-                                                <ol className="mt-3 grid gap-2 border-l pl-3">
-                                                    {item.histories.map(
-                                                        (history) => (
-                                                            <li
-                                                                key={
-                                                                    history.id
-                                                                }
-                                                                className="text-xs"
-                                                            >
-                                                                <p className="font-semibold">
-                                                                    {formatIntakeDate(
-                                                                        history.changed_at,
-                                                                    )}
-                                                                </p>
-                                                                <p className="text-muted-foreground">
-                                                                    {derivationHistoryActionLabel(
-                                                                        history.action,
-                                                                    )}
-                                                                    {history.to_status_label
-                                                                        ? ` · ${history.to_status_label}`
-                                                                        : ''}
-                                                                    {history
-                                                                        .user
-                                                                        ?.name
-                                                                        ? ` · ${history.user.name}`
-                                                                        : ''}
-                                                                </p>
-                                                                {history.new_response && (
-                                                                    <p className="mt-1 line-clamp-2">
-                                                                        {
-                                                                            history.new_response
-                                                                        }
-                                                                    </p>
-                                                                )}
-                                                            </li>
-                                                        ),
-                                                    )}
-                                                </ol>
-                                            )}
-                                        </div>
-                                    ))}
-                                    {request.derivations.length === 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Todavia no hay areas involucradas.
-                                        </p>
+                                            Ver notificaciones de las áreas
+                                        </Link>
                                     )}
-                                </div>
-                            </div>
-                        </div>
-                    </Panel>
-
-                    <Panel title="Adjuntos">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            {request.attachments.map((attachment) => (
-                                <a
-                                    key={attachment.id}
-                                    href={attachment.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex items-center gap-3 rounded-md border bg-background p-3 text-sm hover:bg-muted/60"
-                                >
-                                    <Download className="size-4 shrink-0" />
-                                    <span className="min-w-0 flex-1 truncate">
-                                        {attachment.original_name}
-                                    </span>
-                                </a>
-                            ))}
-                            {request.attachments.length === 0 && (
-                                <p className="text-sm text-muted-foreground">
-                                    No hay adjuntos.
-                                </p>
+                                </Panel>
                             )}
                         </div>
-                    </Panel>
+                    </div>
 
-                    <Panel title="Historial">
-                        <ol className="flex flex-col gap-3 border-l pl-4">
-                            {request.histories.map((item) => (
-                                <li key={item.id} className="text-sm">
+                    <div
+                        id="panel-gestion"
+                        role="tabpanel"
+                        aria-labelledby="tab-gestion"
+                        tabIndex={0}
+                        hidden={tab !== 'gestion'}
+                    >
+                        <div className="grid items-start gap-4 xl:grid-cols-2">
+                            <form
+                                onSubmit={submitDerivation}
+                                className="grid min-w-0 gap-4 rounded-xl border bg-card p-4 sm:p-5"
+                                aria-labelledby="tipificar"
+                            >
+                                <h2
+                                    id="tipificar"
+                                    tabIndex={-1}
+                                    className="scroll-mt-4 text-lg font-semibold"
+                                >
+                                    Tipificar y derivar
+                                </h2>
+                                {suggestedAreas.length > 0 && (
+                                    <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
+                                        <strong>Área sugerida</strong> ·{' '}
+                                        {suggestedAreas.join(' · ')}
+                                    </p>
+                                )}
+                                <div className="grid gap-3">
+                                    <OptionPicker
+                                        title="Tipificaciones"
+                                        searchLabel="Buscar tipificación por nombre o área"
+                                        options={assistanceTypes.map(
+                                            (type) => ({
+                                                id: type.id,
+                                                name: type.name,
+                                                area: type.default_department
+                                                    ?.name,
+                                            }),
+                                        )}
+                                        selectedOptions={selectedTypes}
+                                        onToggle={(id) => {
+                                            derivation.clearErrors(
+                                                'assistance_type_ids',
+                                            );
+                                            derivation.setData(
+                                                'assistance_type_ids',
+                                                toggleId(
+                                                    derivation.data
+                                                        .assistance_type_ids,
+                                                    id,
+                                                ),
+                                            );
+                                        }}
+                                    />
+                                    <OptionPicker
+                                        title="Áreas adicionales"
+                                        searchLabel="Buscar área adicional"
+                                        options={departments}
+                                        selectedOptions={departments.filter(
+                                            (area) =>
+                                                derivation.data.department_ids.includes(
+                                                    area.id,
+                                                ),
+                                        )}
+                                        onToggle={(id) =>
+                                            derivation.setData(
+                                                'department_ids',
+                                                toggleId(
+                                                    derivation.data
+                                                        .department_ids,
+                                                    id,
+                                                ),
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div
+                                    className="grid gap-1 border-y py-3 text-sm"
+                                    aria-live="polite"
+                                >
                                     <strong>
-                                        {formatIntakeDate(item.changed_at)}
+                                        Áreas seleccionadas para derivar
                                     </strong>
                                     <p className="text-muted-foreground">
-                                        {historyActionLabel(item.action)} ·{' '}
-                                        {statusLabel(statuses, item.to_status)}
+                                        {targetAreas.join(' · ') ||
+                                            'Todavía no hay áreas seleccionadas.'}
                                     </p>
-                                    {item.public_comment && (
-                                        <p>{item.public_comment}</p>
-                                    )}
-                                    {item.internal_comment && (
-                                        <p className="mt-1 rounded-md border border-amber-200 bg-amber-50 p-2 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
-                                            {item.internal_comment}
+                                    <strong className="mt-1">
+                                        Derivaciones registradas
+                                    </strong>
+                                    <p className="text-muted-foreground">
+                                        {assignedAreas.join(' · ') ||
+                                            'Todavía no hay derivaciones.'}
+                                    </p>
+                                    {(request.assistance_types?.length ?? 0) >
+                                        0 && (
+                                        <p className="text-muted-foreground">
+                                            Tipificaciones guardadas:{' '}
+                                            {request.assistance_types
+                                                ?.map((type) => type.name)
+                                                .join(' · ')}
                                         </p>
                                     )}
-                                </li>
-                            ))}
-                        </ol>
-                    </Panel>
-                </main>
-
-                <aside className="flex flex-col gap-4">
-                    <section className="flex flex-col gap-3 rounded-lg border bg-card p-4">
-                        <h2 className="text-lg font-semibold">
-                            Aviso por WhatsApp
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                            Genera un resumen listo para enviar al encargado del
-                            area.
-                        </p>
-                        <button
-                            type="button"
-                            onClick={() => copyToClipboard(whatsAppSummary)}
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 font-semibold text-white"
-                        >
-                            {wasWhatsAppSummaryCopied ? (
-                                <Check className="size-4" />
-                            ) : (
-                                <Clipboard className="size-4" />
-                            )}
-                            {wasWhatsAppSummaryCopied
-                                ? 'Resumen copiado'
-                                : 'Copiar resumen'}
-                        </button>
-                    </section>
-
-                    <form
-                        onSubmit={submitDerivation}
-                        className="flex flex-col gap-3 rounded-lg border bg-card p-4"
-                    >
-                        <h2 className="text-lg font-semibold">
-                            Tipificar y derivar
-                        </h2>
-                        <fieldset className="grid gap-2">
-                            <legend className="text-sm font-medium">
-                                Tipo de asistencia
-                            </legend>
-                            {assistanceTypes.map((type) => (
-                                <label
-                                    key={type.id}
-                                    className="flex items-start gap-2 rounded-md border bg-background p-2 text-sm"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        className="mt-1"
-                                        checked={derivation.data.assistance_type_ids.includes(
-                                            type.id,
-                                        )}
-                                        onChange={() =>
-                                            toggleAssistanceType(type.id)
+                                </div>
+                                <label className="grid gap-1.5 text-sm font-medium">
+                                    Nota para las áreas
+                                    <textarea
+                                        className="input min-h-20 w-full"
+                                        value={derivation.data.operator_note}
+                                        onChange={(event) =>
+                                            derivation.setData(
+                                                'operator_note',
+                                                event.target.value,
+                                            )
                                         }
+                                        maxLength={5000}
                                     />
-                                    <span>
-                                        <span
-                                            className="font-semibold"
-                                            style={{ color: type.color }}
-                                        >
-                                            {type.name}
-                                        </span>
-                                        {type.default_department && (
-                                            <span className="block text-xs text-muted-foreground">
-                                                Deriva a:{' '}
-                                                {type.default_department.name}
-                                            </span>
-                                        )}
-                                    </span>
                                 </label>
-                            ))}
-                            {derivation.errors.assistance_type_ids && (
-                                <span className="text-xs text-red-600">
-                                    {derivation.errors.assistance_type_ids}
-                                </span>
-                            )}
-                        </fieldset>
-                        <fieldset className="grid gap-2">
-                            <legend className="text-sm font-medium">
-                                Areas adicionales
-                            </legend>
-                            {departments.map((department) => (
-                                <label
-                                    key={department.id}
-                                    className="flex items-center gap-2 rounded-md border bg-background p-2 text-sm"
+                                <FormFeedback
+                                    errors={derivation.errors}
+                                    success={
+                                        derivation.recentlySuccessful
+                                            ? 'Derivaciones guardadas.'
+                                            : ''
+                                    }
+                                />
+                                <Button
+                                    disabled={busy}
+                                    type="submit"
+                                    className="min-h-11 bg-municipal-action text-municipal-on-action hover:bg-municipal-action/90"
                                 >
-                                    <input
-                                        type="checkbox"
-                                        checked={derivation.data.department_ids.includes(
-                                            department.id,
-                                        )}
-                                        onChange={() =>
-                                            toggleDepartment(department.id)
-                                        }
-                                    />
-                                    <span style={{ color: department.color }}>
-                                        {department.name}
-                                    </span>
-                                </label>
-                            ))}
-                        </fieldset>
-                        <label className="flex flex-col gap-1.5 text-sm font-medium">
-                            Nota para las areas
-                            <textarea
-                                className="input min-h-24"
-                                value={derivation.data.operator_note}
-                                onChange={(event) =>
-                                    derivation.setData(
-                                        'operator_note',
-                                        event.target.value,
-                                    )
-                                }
-                                placeholder="Indicaciones internas para los encargados."
-                            />
-                        </label>
-                        <button
-                            disabled={derivation.processing}
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-violet-700 px-4 font-semibold text-white disabled:opacity-60"
-                        >
-                            <GitBranch className="size-4" /> Guardar
-                            derivaciones
-                        </button>
-                    </form>
+                                    <GitBranch aria-hidden="true" />{' '}
+                                    {derivation.processing
+                                        ? 'Guardando…'
+                                        : 'Guardar derivaciones'}
+                                </Button>
+                            </form>
 
-                    <form
-                        onSubmit={submit}
-                        className="flex flex-col gap-3 rounded-lg border bg-card p-4"
-                    >
-                        <h2 className="text-lg font-semibold">
-                            Gestion interna
-                        </h2>
-                        <label className="flex flex-col gap-1.5 text-sm font-medium">
-                            Estado
-                            <select
-                                className="input"
-                                value={status.data.status}
-                                onChange={(event) =>
-                                    status.setData('status', event.target.value)
-                                }
-                            >
-                                {statuses.map((item) => (
-                                    <option key={item.value} value={item.value}>
-                                        {item.label}
-                                    </option>
-                                ))}
-                            </select>
-                            {status.errors.status && (
-                                <span className="text-xs text-red-600">
-                                    {status.errors.status}
-                                </span>
-                            )}
-                        </label>
-                        <label className="flex flex-col gap-1.5 text-sm font-medium">
-                            Area / sector
-                            <input
-                                className="input"
-                                value={status.data.area}
-                                onChange={(event) =>
-                                    status.setData('area', event.target.value)
-                                }
-                                placeholder="Ej: Obras Publicas"
-                            />
-                        </label>
-                        <label className="flex flex-col gap-1.5 text-sm font-medium">
-                            Mensaje visible para el vecino
-                            <textarea
-                                className="input min-h-28"
-                                value={status.data.public_comment}
-                                onChange={(event) =>
-                                    status.setData(
-                                        'public_comment',
-                                        event.target.value,
-                                    )
-                                }
-                            />
-                        </label>
-                        <label className="flex flex-col gap-1.5 text-sm font-medium">
-                            Nota interna
-                            <textarea
-                                className="input min-h-28"
-                                value={status.data.internal_comment}
-                                onChange={(event) =>
-                                    status.setData(
-                                        'internal_comment',
-                                        event.target.value,
-                                    )
-                                }
-                            />
-                        </label>
-                        <button
-                            disabled={status.processing}
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 font-semibold text-white disabled:opacity-60"
-                        >
-                            <Save className="size-4" /> Guardar estado
-                        </button>
-                    </form>
-                </aside>
+                            <Panel title="Estado del trámite">
+                                <p className="text-sm text-muted-foreground">
+                                    Actualizá el estado o registrá una
+                                    comunicación para el vecino.
+                                </p>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="min-h-11 w-fit"
+                                    disabled={busy}
+                                    onClick={(event) =>
+                                        openStatus(event.currentTarget)
+                                    }
+                                >
+                                    <PencilLine aria-hidden="true" /> Cambiar
+                                    estado
+                                </Button>
+                            </Panel>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            {statusOpen && (
+                <StatusUpdateDialog
+                    key={request.id}
+                    request={request}
+                    statuses={statuses}
+                    onClose={() => closeStatus()}
+                    onSaved={() => closeStatus(true)}
+                />
+            )}
         </>
+    );
+}
+
+function toggleId(ids: number[], id: number) {
+    return ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id];
+}
+
+function normalizeSearch(text: string) {
+    return text
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase()
+        .trim();
+}
+
+function OptionPicker({
+    title,
+    searchLabel,
+    options,
+    selectedOptions,
+    onToggle,
+}: {
+    title: string;
+    searchLabel: string;
+    options: { id: number; name: string; area?: string }[];
+    selectedOptions: { id: number; name: string }[];
+    onToggle: (id: number) => void;
+}) {
+    const [query, setQuery] = useState('');
+    const words = normalizeSearch(query).split(/\s+/).filter(Boolean);
+    const matching = options.filter((option) => {
+        const searchable = normalizeSearch(
+            option.name + ' ' + (option.area ?? ''),
+        );
+        return words.every((word) => searchable.includes(word));
+    });
+
+    return (
+        <fieldset className="grid min-w-0 gap-2 rounded-lg border p-3">
+            <legend className="px-1 text-sm font-semibold">{title}</legend>
+            {selectedOptions.length > 0 && (
+                <ul
+                    aria-label={title + ' seleccionadas'}
+                    className="flex flex-wrap gap-1.5"
+                >
+                    {selectedOptions.map((option) => (
+                        <li key={option.id} className="max-w-full">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="min-h-10 max-w-full whitespace-normal"
+                                aria-label={'Quitar ' + option.name}
+                                onClick={() => onToggle(option.id)}
+                            >
+                                {option.name} <X aria-hidden="true" />
+                            </Button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <label className="grid gap-1 text-sm">
+                {searchLabel}
+                <input
+                    className="input min-h-11 w-full"
+                    type="search"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                />
+            </label>
+            <p role="status" className="text-xs text-muted-foreground">
+                {matching.length}{' '}
+                {matching.length === 1 ? 'opción' : 'opciones'}
+            </p>
+            {matching.length > 0 && (
+                <div className="max-h-36 overflow-auto rounded-md border bg-background">
+                    {matching.map((option) => (
+                        <label
+                            key={option.id}
+                            className="flex min-h-10 items-start gap-2 border-b px-2.5 py-2 text-sm last:border-0 hover:bg-muted/50"
+                        >
+                            <input
+                                type="checkbox"
+                                className="mt-1 size-4 shrink-0 accent-municipal-action"
+                                checked={selectedOptions.some(
+                                    (item) => item.id === option.id,
+                                )}
+                                onChange={() => onToggle(option.id)}
+                            />
+                            <span className="min-w-0 break-words">
+                                {option.name}
+                                {option.area && (
+                                    <span className="block text-xs text-muted-foreground">
+                                        {option.area}
+                                    </span>
+                                )}
+                            </span>
+                        </label>
+                    ))}
+                </div>
+            )}
+        </fieldset>
+    );
+}
+
+function FormFeedback({
+    errors,
+    success,
+}: {
+    errors: Record<string, string>;
+    success: string;
+}) {
+    const messages = [
+        ...new Set(
+            Object.values(errors).map((message) =>
+                message.startsWith('validation.')
+                    ? 'Revisá los datos del formulario e intentá de nuevo.'
+                    : message,
+            ),
+        ),
+    ];
+
+    if (messages.length) {
+        return (
+            <ul role="alert" className="grid gap-1 text-sm text-destructive">
+                {messages.map((message) => (
+                    <li key={message}>{message}</li>
+                ))}
+            </ul>
+        );
+    }
+
+    return (
+        <p
+            role="status"
+            className={
+                success
+                    ? 'text-sm font-medium text-emerald-800 dark:text-emerald-300'
+                    : 'sr-only'
+            }
+        >
+            {success}
+        </p>
+    );
+}
+
+function latestFirst<T extends { id: number; changed_at?: string | null }>(
+    items: T[],
+) {
+    return [...items].sort((a, b) => {
+        const dateDifference =
+            (b.changed_at ? Date.parse(b.changed_at) : 0) -
+            (a.changed_at ? Date.parse(a.changed_at) : 0);
+        return dateDifference || b.id - a.id;
+    });
+}
+
+function RequestHistory({
+    items,
+    statuses,
+}: {
+    items: IntakeRequest['histories'];
+    statuses: StatusOption[];
+}) {
+    if (!items.length) {
+        return (
+            <p className="text-sm text-muted-foreground">
+                Todavía no hay movimientos.
+            </p>
+        );
+    }
+
+    return (
+        <ol className="grid gap-4">
+            {latestFirst(items).map((item) => {
+                const Icon = historyIcon(item);
+                return (
+                    <li
+                        key={item.id}
+                        className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-3 border-b pb-4 last:border-0 last:pb-0"
+                    >
+                        <span
+                            className={cn(
+                                'grid size-9 place-items-center rounded-lg border',
+                                intakeStatusClass(item.to_status ?? ''),
+                            )}
+                        >
+                            <Icon aria-hidden="true" className="size-4" />
+                        </span>
+                        <div className="grid gap-2 text-sm">
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                                <h3 className="text-base font-semibold">
+                                    {historyActionLabel(
+                                        item.action,
+                                        item.to_status,
+                                        Boolean(item.public_comment),
+                                    )}
+                                </h3>
+                                <p className="text-muted-foreground">
+                                    {formatIntakeDate(item.changed_at)}
+                                    {item.user && ' · ' + item.user.name}
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                {item.from_status &&
+                                    item.from_status !== item.to_status && (
+                                        <>
+                                            <span className="text-muted-foreground">
+                                                {statusLabel(
+                                                    statuses,
+                                                    item.from_status,
+                                                )}
+                                            </span>
+                                            <ArrowRight
+                                                aria-hidden="true"
+                                                className="size-3.5 text-muted-foreground"
+                                            />
+                                        </>
+                                    )}
+                                {item.to_status && (
+                                    <span
+                                        className={cn(
+                                            'rounded border px-1.5 py-0.5 font-medium',
+                                            intakeStatusClass(item.to_status),
+                                        )}
+                                    >
+                                        {statusLabel(statuses, item.to_status)}
+                                    </span>
+                                )}
+                            </div>
+                            {item.public_comment && (
+                                <div className="grid gap-1 rounded-lg border border-blue-200 bg-blue-50/70 p-3 dark:border-blue-950 dark:bg-blue-950/30">
+                                    <strong className="text-xs font-semibold text-blue-900 dark:text-blue-200">
+                                        Visible para el vecino
+                                    </strong>
+                                    <p className="[overflow-wrap:anywhere] whitespace-pre-wrap">
+                                        {item.public_comment}
+                                    </p>
+                                </div>
+                            )}
+                            {item.internal_comment && (
+                                <div className="grid gap-1 rounded-lg border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-950 dark:bg-amber-950/30">
+                                    <strong className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                                        Nota interna
+                                    </strong>
+                                    <p className="[overflow-wrap:anywhere] whitespace-pre-wrap">
+                                        {item.internal_comment}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </li>
+                );
+            })}
+        </ol>
+    );
+}
+
+function historyIcon(item: IntakeRequest['histories'][number]) {
+    if (item.action === 'created') return Inbox;
+    if (item.action === 'derived') return GitBranch;
+    if (item.action === 'documentation_received') return FileCheck;
+    if (item.to_status === 'needs_documentation') return FileQuestion;
+    if (item.public_comment) return MessageSquare;
+    return History;
+}
+
+function AreaDerivations({ derivations }: { derivations: Derivation[] }) {
+    return (
+        <div className="grid gap-3">
+            {derivations.map((item) => (
+                <section
+                    key={item.id}
+                    className="grid min-w-0 gap-2 rounded-lg border p-3 text-sm"
+                >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="font-semibold">
+                            {item.department.name}
+                        </h3>
+                        <span
+                            className={cn(
+                                'rounded-md border px-2 py-1 text-xs font-semibold',
+                                intakeDerivationStatusClass(item.status),
+                            )}
+                        >
+                            {item.status_label}
+                        </span>
+                    </div>
+                    {item.assistance_type && (
+                        <Info
+                            label="Tipificación"
+                            value={item.assistance_type.name}
+                        />
+                    )}
+                    {item.operator_note && (
+                        <Info
+                            label="Nota para el área"
+                            value={item.operator_note}
+                        />
+                    )}
+                    {item.department_response && (
+                        <Info
+                            label="Última respuesta del área"
+                            value={item.department_response}
+                        />
+                    )}
+                    {item.histories.length > 0 && (
+                        <details>
+                            <summary className="w-fit cursor-pointer py-2 font-medium">
+                                Movimientos del área ({item.histories.length})
+                            </summary>
+                            <ol className="grid gap-3 border-s ps-3">
+                                {latestFirst(item.histories).map((history) => (
+                                    <li key={history.id} className="grid gap-1">
+                                        <p className="font-medium">
+                                            {derivationHistoryActionLabel(
+                                                history.action,
+                                            )}
+                                            {history.to_status_label &&
+                                                ' · ' + history.to_status_label}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {formatIntakeDate(
+                                                history.changed_at,
+                                            )}
+                                            {history.user &&
+                                                ' · ' + history.user.name}
+                                        </p>
+                                        {history.new_response && (
+                                            <p className="[overflow-wrap:anywhere] whitespace-pre-wrap">
+                                                {history.new_response}
+                                            </p>
+                                        )}
+                                    </li>
+                                ))}
+                            </ol>
+                        </details>
+                    )}
+                </section>
+            ))}
+        </div>
+    );
+}
+
+type Attachment = IntakeRequest['attachments'][number];
+
+function Attachments({ items }: { items: Attachment[] }) {
+    const [preview, setPreview] = useState<Attachment | null>(null);
+    const previewButton = useRef<HTMLButtonElement>(null);
+
+    if (!items.length) {
+        return (
+            <p className="text-sm text-muted-foreground">No hay adjuntos.</p>
+        );
+    }
+
+    return (
+        <>
+            <ul className="grid gap-3 lg:grid-cols-2">
+                {items.map((item) => {
+                    const pdf = /\.pdf$/i.test(item.original_name);
+                    const image = /\.(?:jpe?g|png|webp)$/i.test(
+                        item.original_name,
+                    );
+                    const Icon = pdf ? FileText : image ? FileImage : FileIcon;
+                    const sources: Record<string, string> = {
+                        initial: 'Documento original',
+                        supplemental: 'Enviado después por el vecino',
+                    };
+
+                    return (
+                        <li
+                            key={item.id}
+                            className="grid min-w-0 gap-2 rounded-lg border p-3"
+                        >
+                            <div className="flex min-w-0 items-start gap-2.5">
+                                <Icon
+                                    aria-hidden="true"
+                                    className="mt-0.5 size-5 shrink-0 text-emerald-700 dark:text-emerald-300"
+                                />
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium [overflow-wrap:anywhere]">
+                                        {item.original_name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {sources[item.type] ??
+                                            'Documento adjunto'}
+                                        {item.created_at &&
+                                            ' · ' + item.created_at}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {(pdf || image) && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="min-h-10"
+                                        aria-label={'Ver ' + item.original_name}
+                                        onClick={(event) => {
+                                            previewButton.current =
+                                                event.currentTarget;
+                                            setPreview(item);
+                                        }}
+                                    >
+                                        <Eye aria-hidden="true" /> Ver
+                                    </Button>
+                                )}
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    className="min-h-10"
+                                >
+                                    <a
+                                        href={item.url}
+                                        aria-label={
+                                            'Descargar ' + item.original_name
+                                        }
+                                    >
+                                        <Download aria-hidden="true" />{' '}
+                                        Descargar
+                                    </a>
+                                </Button>
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
+            <Dialog
+                open={preview !== null}
+                onOpenChange={(open) => {
+                    if (!open) setPreview(null);
+                }}
+            >
+                {preview && (
+                    <DialogContent
+                        className="max-h-[90dvh] overflow-auto sm:max-w-4xl"
+                        onCloseAutoFocus={(event) => {
+                            event.preventDefault();
+                            previewButton.current?.focus();
+                        }}
+                    >
+                        <DialogHeader className="min-w-0 pe-6">
+                            <DialogTitle className="[overflow-wrap:anywhere]">
+                                {preview.original_name}
+                            </DialogTitle>
+                            <DialogDescription>
+                                Vista previa del adjunto
+                            </DialogDescription>
+                        </DialogHeader>
+                        <AttachmentPreview key={preview.id} item={preview} />
+                        <DialogFooter>
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="min-h-10"
+                            >
+                                <a href={preview.url}>
+                                    <Download aria-hidden="true" /> Descargar
+                                    archivo
+                                </a>
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                )}
+            </Dialog>
+        </>
+    );
+}
+
+const previewTypes = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+];
+
+function AttachmentPreview({ item }: { item: Attachment }) {
+    const [file, setFile] = useState<{ url: string; mime: string } | null>(
+        null,
+    );
+    const [failed, setFailed] = useState(false);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        let objectUrl: string | null = null;
+
+        async function loadPreview() {
+            try {
+                const response = await fetch(item.url, {
+                    signal: controller.signal,
+                });
+                const mime =
+                    response.headers.get('content-type')?.split(';')[0] ?? '';
+                if (!response.ok || !previewTypes.includes(mime)) {
+                    throw new Error('Invalid attachment preview');
+                }
+
+                const blob = await response.blob();
+                if (!controller.signal.aborted) {
+                    objectUrl = URL.createObjectURL(blob);
+                    setFile({ url: objectUrl, mime });
+                }
+            } catch {
+                if (!controller.signal.aborted) setFailed(true);
+            }
+        }
+
+        void loadPreview();
+        return () => {
+            controller.abort();
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        };
+    }, [item.url]);
+
+    if (failed) {
+        return (
+            <p role="alert" className="text-sm text-destructive">
+                No se pudo mostrar la vista previa. Podés intentar descargar el
+                archivo.
+            </p>
+        );
+    }
+    if (!file) {
+        return (
+            <p role="status" className="text-sm text-muted-foreground">
+                Cargando archivo…
+            </p>
+        );
+    }
+    if (file.mime === 'application/pdf') {
+        return (
+            <iframe
+                className="h-[60dvh] w-full rounded-md border"
+                title={item.original_name}
+                src={file.url}
+            />
+        );
+    }
+    return (
+        <img
+            src={file.url}
+            alt={item.original_name}
+            className="mx-auto max-h-[60dvh] w-full object-contain"
+        />
     );
 }
 
@@ -614,7 +1269,7 @@ function Panel({
     children: React.ReactNode;
 }) {
     return (
-        <section className="rounded-lg border bg-card p-4">
+        <section className="min-w-0 rounded-xl border bg-card p-4 sm:p-5">
             <h2 className="mb-3 text-lg font-semibold">{title}</h2>
             <div className="flex flex-col gap-3">{children}</div>
         </section>
@@ -626,10 +1281,10 @@ function Info({ label, value }: { label: string; value?: unknown }) {
 
     return (
         <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">
-                {label}
+            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <p className="text-sm [overflow-wrap:anywhere] whitespace-pre-wrap">
+                {displayValue || 'Sin dato'}
             </p>
-            <p className="text-sm">{displayValue || 'Sin dato'}</p>
         </div>
     );
 }
@@ -640,7 +1295,9 @@ function fieldLabel(request: IntakeRequest, key: string) {
     }
 
     return (
-        request.type.schema?.find((field) => field.name === key)?.label ?? key
+        (request.subtype?.schema ?? request.type.schema)?.find(
+            (field) => field.name === key,
+        )?.label ?? key
     );
 }
 
@@ -680,57 +1337,40 @@ function displayPayloadValue(value: unknown): string {
 
 function buildWhatsAppSummary(request: IntakeRequest): string {
     const lines = [
-        '*Mesa de Entrada - nueva solicitud*',
+        '*Mesa de Entrada - aviso de solicitud*',
         `Codigo: ${request.public_code}`,
         `Fecha: ${formatIntakeDate(request.created_at)}`,
         `Estado: ${request.status_label}`,
-        '',
-        '*Vecino / institucion*',
-        `Nombre: ${request.applicant_name}`,
-        `Telefono: ${request.applicant_phone}`,
-        optionalLine('DNI / CUIT', request.applicant_dni),
-        optionalLine('Email', request.applicant_email),
-        optionalLine('Domicilio', request.applicant_address),
         '',
         '*Solicitud*',
         `Categoria: ${request.type.category}`,
         `Tipo: ${request.type.name}`,
         `Asunto: ${request.subject}`,
-        `Resumen: ${request.summary}`,
-        ...payloadSummaryLines(request),
+        ...([
+            'Eventos',
+            'Ambiente y animales',
+            'Obras y Servicios Publicos',
+        ].includes(request.type.category)
+            ? [
+                  'lugar',
+                  'fecha',
+                  'desde',
+                  'hasta',
+                  'personas',
+                  'cobertura',
+              ].flatMap((key) => {
+                  const value = displayPayloadValue(request.payload?.[key]);
+
+                  return value ? [`${fieldLabel(request, key)}: ${value}`] : [];
+              })
+            : []),
         ...assistanceSummaryLines(request),
         ...derivationSummaryLines(request),
-        ...attachmentSummaryLines(request),
+        '',
+        'Datos y adjuntos disponibles en el panel de Mesa de Entrada.',
     ];
 
     return lines.filter((line) => line !== null).join('\n');
-}
-
-function optionalLine(label: string, value?: string | null): string | null {
-    if (!value) {
-        return null;
-    }
-
-    return `${label}: ${value}`;
-}
-
-function payloadSummaryLines(request: IntakeRequest): string[] {
-    const entries = Object.entries(request.payload ?? {}).filter(([, value]) =>
-        Boolean(displayPayloadValue(value)),
-    );
-
-    if (entries.length === 0) {
-        return [];
-    }
-
-    return [
-        '',
-        '*Datos cargados*',
-        ...entries.map(
-            ([key, value]) =>
-                `${fieldLabel(request, key)}: ${displayPayloadValue(value)}`,
-        ),
-    ];
 }
 
 function assistanceSummaryLines(request: IntakeRequest): string[] {
@@ -756,26 +1396,8 @@ function derivationSummaryLines(request: IntakeRequest): string[] {
             const assistance = derivation.assistance_type?.name
                 ? ` / ${derivation.assistance_type.name}`
                 : '';
-            const note = derivation.operator_note
-                ? ` - Nota: ${derivation.operator_note}`
-                : '';
-
-            return `${derivation.department.name}${assistance}: ${derivation.status_label}${note}`;
+            return `${derivation.department.name}${assistance}: ${derivation.status_label}`;
         }),
-    ];
-}
-
-function attachmentSummaryLines(request: IntakeRequest): string[] {
-    if (request.attachments.length === 0) {
-        return [];
-    }
-
-    return [
-        '',
-        `Adjuntos: ${request.attachments.length}`,
-        ...request.attachments.map(
-            (attachment) => `- ${attachment.original_name}: ${attachment.url}`,
-        ),
     ];
 }
 
@@ -786,16 +1408,19 @@ function statusLabel(
     return statuses.find((item) => item.value === value)?.label ?? 'Sin estado';
 }
 
-function historyActionLabel(action: string) {
-    if (action === 'created') {
-        return 'Creacion';
-    }
-
-    if (action === 'status_changed') {
-        return 'Cambio de estado';
-    }
-
-    return action;
+function historyActionLabel(
+    action: string,
+    status?: string | null,
+    hasPublicMessage = false,
+) {
+    if (action === 'created') return 'Solicitud recibida';
+    if (action === 'derived') return 'Solicitud derivada';
+    if (action === 'documentation_received') return 'Documentación recibida';
+    if (action !== 'status_changed') return action;
+    if (status === 'needs_documentation') return 'Se solicitó documentación';
+    if (status === 'answered') return 'Respuesta registrada';
+    if (hasPublicMessage) return 'Actualización con mensaje público';
+    return 'Cambio de estado';
 }
 
 function derivationHistoryActionLabel(action: string) {

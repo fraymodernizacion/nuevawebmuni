@@ -18,7 +18,8 @@ createInertiaApp({
                 name === 'boletin' ||
                 name === 'juzgado-faltas' ||
                 name === 'rentas' ||
-                name.startsWith('complaints/public/'):
+                name.startsWith('complaints/public/') ||
+                name.startsWith('intake/public/'):
                 return null;
             case name.startsWith('inventory/quick/'):
                 return null;

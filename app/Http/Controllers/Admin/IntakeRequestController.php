@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -125,6 +126,7 @@ class IntakeRequestController extends Controller
 
         $intakeRequest->load([
             'type',
+            'subtype.defaultAssistanceType.defaultDepartment',
             'histories.user:id,name',
             'attachments',
             'assistanceTypes.defaultDepartment:id,name,color',
@@ -134,7 +136,27 @@ class IntakeRequestController extends Controller
             'derivations.histories.user:id,name',
         ]);
 
+        $suggestedAssistance = $intakeRequest->subtype?->defaultAssistanceType;
+        $suggestedAssistanceIds = $suggestedAssistance?->active && $suggestedAssistance->defaultDepartment?->active
+            ? [$suggestedAssistance->id]
+            : [];
+
+        if ($intakeRequest->subtype?->slug === 'cobertura-eventos') {
+            $coverage = data_get($intakeRequest->payload, 'cobertura');
+            $guardia = IntakeAssistanceType::where('slug', 'solicitudes-guardia-urbana')
+                ->where('active', true)
+                ->whereHas('defaultDepartment', fn (Builder $query) => $query->where('active', true))
+                ->value('id');
+
+            if ($guardia && $coverage === 'Guardia Urbana') {
+                $suggestedAssistanceIds = [$guardia];
+            } elseif ($guardia && $coverage === 'Tránsito y Guardia Urbana') {
+                $suggestedAssistanceIds[] = $guardia;
+            }
+        }
+
         return Inertia::render('intake/admin/show', [
+            'suggestedAssistanceIds' => $suggestedAssistanceIds,
             'request' => [
                 ...$intakeRequest->toArray(),
                 'status_label' => $intakeRequest->status->label(),
@@ -176,7 +198,7 @@ class IntakeRequestController extends Controller
                 ->where('default_intake_department_id', $departmentId)
                 ->value('id') ?? $assistanceTypeIds->first();
 
-            IntakeDerivation::updateOrCreate(
+            IntakeDerivation::firstOrCreate(
                 [
                     'intake_request_id' => $intakeRequest->id,
                     'intake_department_id' => $departmentId,
@@ -214,25 +236,42 @@ class IntakeRequestController extends Controller
     public function updateStatus(UpdateIntakeRequestStatusRequest $request, IntakeRequest $intakeRequest): RedirectResponse
     {
         $validated = $request->validated();
-        $previousStatus = $intakeRequest->status;
         $nextStatus = IntakeRequestStatus::from($validated['status']);
 
-        $intakeRequest->update([
-            'status' => $nextStatus,
-            'area' => $validated['area'] ?? $intakeRequest->area,
-            'finished_at' => in_array($nextStatus, [IntakeRequestStatus::Finished, IntakeRequestStatus::Rejected], true) ? now() : $intakeRequest->finished_at,
-        ]);
+        DB::transaction(function () use ($request, $intakeRequest, $validated, $nextStatus): void {
+            $lockedRequest = IntakeRequest::whereKey($intakeRequest->getKey())->lockForUpdate()->firstOrFail();
+            $submissionId = $validated['submission_id'] ?? null;
+            $operatorId = $request->user()?->id;
 
-        $intakeRequest->histories()->create([
-            'user_id' => $request->user()?->id,
-            'from_status' => $previousStatus,
-            'to_status' => $nextStatus,
-            'action' => 'status_changed',
-            'public_comment' => $validated['public_comment'] ?? null,
-            'internal_comment' => $validated['internal_comment'] ?? null,
-            'new_values' => ['area' => $validated['area'] ?? null],
-            'changed_at' => now(),
-        ]);
+            if ($submissionId && $lockedRequest->histories()
+                ->where('action', 'status_changed')
+                ->where('user_id', $operatorId)
+                ->where('new_values->submission_id', $submissionId)
+                ->exists()) {
+                return;
+            }
+
+            $previousStatus = $lockedRequest->status;
+            $lockedRequest->update([
+                'status' => $nextStatus,
+                'area' => $validated['area'] ?? $lockedRequest->area,
+                'finished_at' => in_array($nextStatus, [IntakeRequestStatus::Finished, IntakeRequestStatus::Rejected], true) ? now() : $lockedRequest->finished_at,
+            ]);
+
+            $lockedRequest->histories()->create([
+                'user_id' => $operatorId,
+                'from_status' => $previousStatus,
+                'to_status' => $nextStatus,
+                'action' => 'status_changed',
+                'public_comment' => $validated['public_comment'] ?? null,
+                'internal_comment' => $validated['internal_comment'] ?? null,
+                'new_values' => [
+                    'area' => $validated['area'] ?? null,
+                    ...($submissionId ? ['submission_id' => $submissionId] : []),
+                ],
+                'changed_at' => now(),
+            ]);
+        });
 
         return back()->with('success', 'Solicitud actualizada.');
     }

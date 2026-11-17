@@ -29,6 +29,7 @@ type Derivation = {
         applicant_email?: string | null;
         applicant_address?: string | null;
         payload?: Record<string, unknown>;
+        subtype?: { schema?: { name: string; label: string }[] } | null;
         created_at: string;
         type: {
             name: string;
@@ -381,8 +382,8 @@ function fieldLabel(derivation: Derivation, key: string) {
     }
 
     return (
-        derivation.request.type.schema?.find((field) => field.name === key)
-            ?.label ?? key
+        (derivation.request.subtype?.schema ?? derivation.request.type.schema)
+            ?.find((field) => field.name === key)?.label ?? key
     );
 }
 
