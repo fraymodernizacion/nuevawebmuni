@@ -60,7 +60,7 @@ class IntakeNovemberCatalogSeeder extends Seeder
                 $type = $types->get($group);
                 $department = $areas->get($area);
                 if (! $type || ! $department) {
-                    throw new \RuntimeException('Falta el catálogo base de Mesa de Entrada. Ejecutá primero IntakeModuleSeeder.');
+                    throw new \RuntimeException('Falta el catálogo base de Mesa de Entrada. Ejecutá IntakeCatalogSeeder.');
                 }
 
                 $assistance = $assistanceTypes[$area] ??= IntakeAssistanceType::firstOrCreate(
