@@ -20,6 +20,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -243,40 +244,66 @@ class IntakeRequestController extends Controller
         $validated = $request->validated();
         $nextStatus = IntakeRequestStatus::from($validated['status']);
 
-        DB::transaction(function () use ($request, $intakeRequest, $validated, $nextStatus): void {
-            $lockedRequest = IntakeRequest::whereKey($intakeRequest->getKey())->lockForUpdate()->firstOrFail();
-            $submissionId = $validated['submission_id'] ?? null;
-            $operatorId = $request->user()?->id;
+        $storedPaths = [];
 
-            if ($submissionId && $lockedRequest->histories()
-                ->where('action', 'status_changed')
-                ->where('user_id', $operatorId)
-                ->where('new_values->submission_id', $submissionId)
-                ->exists()) {
-                return;
-            }
+        try {
+            DB::transaction(function () use ($request, $intakeRequest, $validated, $nextStatus, &$storedPaths): void {
+                $lockedRequest = IntakeRequest::whereKey($intakeRequest->getKey())->lockForUpdate()->firstOrFail();
+                $submissionId = $validated['submission_id'] ?? null;
+                $operatorId = $request->user()?->id;
 
-            $previousStatus = $lockedRequest->status;
-            $lockedRequest->update([
-                'status' => $nextStatus,
-                'area' => $validated['area'] ?? $lockedRequest->area,
-                'finished_at' => in_array($nextStatus, [IntakeRequestStatus::Finished, IntakeRequestStatus::Rejected], true) ? now() : $lockedRequest->finished_at,
-            ]);
+                if ($submissionId && $lockedRequest->histories()
+                    ->where('action', 'status_changed')
+                    ->where('user_id', $operatorId)
+                    ->where('new_values->submission_id', $submissionId)
+                    ->exists()) {
+                    return;
+                }
 
-            $lockedRequest->histories()->create([
-                'user_id' => $operatorId,
-                'from_status' => $previousStatus,
-                'to_status' => $nextStatus,
-                'action' => 'status_changed',
-                'public_comment' => $validated['public_comment'] ?? null,
-                'internal_comment' => $validated['internal_comment'] ?? null,
-                'new_values' => [
-                    'area' => $validated['area'] ?? null,
-                    ...($submissionId ? ['submission_id' => $submissionId] : []),
-                ],
-                'changed_at' => now(),
-            ]);
-        });
+                foreach ($request->file('response_documents', []) as $file) {
+                    $path = $file->store("intake/{$lockedRequest->public_code}/responses", 'local');
+                    if ($path === false) {
+                        throw new \RuntimeException('No se pudo guardar el documento de respuesta.');
+                    }
+                    $storedPaths[] = $path;
+                    $lockedRequest->attachments()->create([
+                        'uploaded_by' => $operatorId,
+                        'disk' => 'local',
+                        'path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                        'type' => 'response',
+                    ]);
+                }
+
+                $previousStatus = $lockedRequest->status;
+                $lockedRequest->update([
+                    'status' => $nextStatus,
+                    'area' => $validated['area'] ?? $lockedRequest->area,
+                    'finished_at' => in_array($nextStatus, [IntakeRequestStatus::Finished, IntakeRequestStatus::Rejected], true) ? now() : $lockedRequest->finished_at,
+                ]);
+
+                $lockedRequest->histories()->create([
+                    'user_id' => $operatorId,
+                    'from_status' => $previousStatus,
+                    'to_status' => $nextStatus,
+                    'action' => 'status_changed',
+                    'public_comment' => $validated['public_comment'] ?? null,
+                    'internal_comment' => $validated['internal_comment'] ?? null,
+                    'new_values' => [
+                        'area' => $validated['area'] ?? null,
+                        'response_document_count' => count($storedPaths),
+                        ...($submissionId ? ['submission_id' => $submissionId] : []),
+                    ],
+                    'changed_at' => now(),
+                ]);
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($storedPaths);
+
+            throw $exception;
+        }
 
         return back()->with('success', 'Solicitud actualizada.');
     }

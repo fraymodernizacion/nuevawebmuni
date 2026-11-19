@@ -4,6 +4,8 @@ import {
     CircleCheck,
     Clock3,
     Copy,
+    Download,
+    PauseCircle,
     FileQuestion,
     Inbox,
     MessageSquareText,
@@ -37,7 +39,7 @@ const states = {
         tone: 'blue',
     },
     under_review: {
-        label: 'En revisión',
+        label: 'En Revisión',
         title: 'Estamos revisando tu solicitud',
         event: 'Revisión iniciada',
         detail: 'El municipio está revisando los datos del trámite.',
@@ -46,7 +48,7 @@ const states = {
         tone: 'amber',
     },
     routed: {
-        label: 'En gestión',
+        label: 'Derivado',
         title: 'Tu solicitud está en gestión',
         event: 'Solicitud enviada al área responsable',
         detail: 'El área municipal correspondiente recibió la solicitud.',
@@ -80,8 +82,26 @@ const states = {
         icon: CircleCheck,
         tone: 'emerald',
     },
+    pending: {
+        label: 'Pendiente',
+        title: 'Tu trámite está pendiente',
+        event: 'Trámite pendiente',
+        detail: 'La solicitud está pendiente de una acción para continuar.',
+        next: 'Revisá las indicaciones del municipio y el historial.',
+        icon: Clock3,
+        tone: 'amber',
+    },
+    suspended: {
+        label: 'Suspendido',
+        title: 'La gestión de tu trámite está suspendida',
+        event: 'Gestión suspendida',
+        detail: 'El municipio registró la suspensión del trámite.',
+        next: 'Revisá la respuesta del municipio para conocer el motivo y cómo continuar.',
+        icon: PauseCircle,
+        tone: 'neutral',
+    },
     rejected: {
-        label: 'Rechazado o no corresponde',
+        label: 'Rechazado/ No corresponde',
         title: 'Tu solicitud no pudo continuar',
         event: 'Solicitud rechazada o fuera de alcance',
         detail: 'El municipio registró que la solicitud no puede continuar.',
@@ -104,6 +124,12 @@ type Props = {
         updated_at: string | null;
         response: { id: number; text: string; date: string | null } | null;
         documentation_received: boolean;
+        response_documents: {
+            id: number;
+            name: string;
+            date: string | null;
+            url: string;
+        }[];
         documentation_request_id: number | null;
         timeline: {
             id: number;
@@ -207,6 +233,49 @@ export default function PublicIntakeStatus({ request }: Props) {
                             <p className="text-zinc-700 dark:text-zinc-200">
                                 {next}
                             </p>
+                        </section>
+                    )}
+
+                    {request.response_documents?.length > 0 && (
+                        <section
+                            aria-labelledby="documentos-municipio"
+                            className="grid gap-3 rounded-lg border border-municipal-outline bg-card p-4"
+                        >
+                            <h2
+                                id="documentos-municipio"
+                                className="text-[22px] font-semibold"
+                            >
+                                Documentos del municipio
+                            </h2>
+                            <ul className="grid gap-3">
+                                {request.response_documents.map((file) => (
+                                    <li
+                                        key={file.id}
+                                        className="grid gap-1 border-b pb-3 last:border-0 last:pb-0"
+                                    >
+                                        <p className="font-semibold [overflow-wrap:anywhere]">
+                                            {file.name}
+                                        </p>
+                                        {file.date && (
+                                            <p className="text-sm text-muted-foreground">
+                                                {file.date}
+                                            </p>
+                                        )}
+                                        <a
+                                            href={file.url}
+                                            className="inline-flex min-h-12 w-fit max-w-full items-center gap-2 font-semibold text-municipal-link underline"
+                                        >
+                                            <Download
+                                                aria-hidden="true"
+                                                className="size-5 shrink-0"
+                                            />
+                                            <span className="min-w-0 [overflow-wrap:anywhere]">
+                                                Descargar {file.name}
+                                            </span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
                         </section>
                     )}
 

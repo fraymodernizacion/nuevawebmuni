@@ -6,6 +6,7 @@ use App\Enums\IntakeRequestStatus;
 use App\Http\Requests\StorePublicIntakeRequestRequest;
 use App\Http\Requests\TrackIntakeRequestRequest;
 use App\Models\IntakeRequest;
+use App\Models\IntakeRequestAttachment;
 use App\Models\IntakeRequestHistory;
 use App\Models\IntakeRequestSubtype;
 use App\Models\IntakeRequestType;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PublicIntakeRequestController extends Controller
 {
@@ -178,6 +180,13 @@ class PublicIntakeRequestController extends Controller
                     'date' => LocalDateTime::format($message->changed_at),
                 ] : null,
                 'documentation_received' => $documentationReceived,
+                'response_documents' => $intakeRequest->attachments()->where('type', 'response')->latest()->get()
+                    ->map(fn (IntakeRequestAttachment $attachment): array => [
+                        'id' => $attachment->id,
+                        'name' => $attachment->original_name,
+                        'date' => LocalDateTime::format($attachment->created_at),
+                        'url' => route('intake.public.response.download', [$code, $attachment->id]),
+                    ])->values(),
                 'documentation_request_id' => $intakeRequest->status === IntakeRequestStatus::NeedsDocumentation ? $latest?->id : null,
                 'summary' => $intakeRequest->summary,
                 'created_at' => LocalDateTime::format($intakeRequest->created_at),
@@ -191,6 +200,33 @@ class PublicIntakeRequestController extends Controller
                 ])->values(),
             ],
         ]);
+    }
+
+    public function mailAccess(Request $request, string $code): RedirectResponse
+    {
+        if (! $request->hasValidSignature()) {
+            return to_route('intake.public.track')->withErrors([
+                'number' => 'El enlace venció o no es válido. Consultá con tu número de trámite y DNI.',
+            ]);
+        }
+
+        abort_unless(IntakeRequest::where('public_code', $code)->exists(), 404);
+        $request->session()->put('intake_tracking', [
+            'public_code' => $code,
+            'expires_at' => now()->addMinutes(30)->timestamp,
+        ]);
+
+        return to_route('intake.public.status', $code);
+    }
+
+    public function downloadResponse(Request $request, string $code, IntakeRequestAttachment $attachment): StreamedResponse
+    {
+        abort_unless($this->canTrack($request, $code), 403);
+        abort_unless($attachment->type === 'response' && $attachment->request->public_code === $code, 404);
+        $disk = Storage::disk($attachment->disk);
+        abort_unless($disk->exists($attachment->path), 404);
+
+        return $disk->download($attachment->path, $attachment->original_name, ['Cache-Control' => 'private, no-store']);
     }
 
     public function storeDocumentation(Request $request, string $code): RedirectResponse

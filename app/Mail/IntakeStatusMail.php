@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Support\Facades\URL;
 
 class IntakeStatusMail extends Mailable implements ShouldQueue
 {
@@ -29,23 +30,20 @@ class IntakeStatusMail extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: new Address(config('mail.intake.from_address'), 'Mesa de Entrada Virtual'),
-            subject: ($this->received ? 'Recibimos tu trámite' : 'Cambió el estado de tu trámite').' '.$this->publicCode,
+            subject: ($this->received ? 'Recibimos tu trámite' : 'Actualización de tu trámite').' '.$this->publicCode,
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.intake-status',
+            view: 'mail.intake-status',
+            text: 'mail.intake-status-text',
             with: [
-                'trackingUrl' => route('intake.public.track'),
-                'statusLabel' => match ($this->status) {
-                    IntakeRequestStatus::UnderReview => 'En revisión',
-                    IntakeRequestStatus::Routed => 'En gestión',
-                    IntakeRequestStatus::NeedsDocumentation => 'Requiere documentación',
-                    default => $this->status->label(),
-                },
+                'trackingUrl' => URL::temporarySignedRoute('intake.public.mail-access', now()->addDays(7), ['code' => $this->publicCode]),
+                'statusLabel' => $this->status->label(),
                 'needsDocumentation' => $this->status === IntakeRequestStatus::NeedsDocumentation,
+                'logoUrl' => asset('assets/optimized/fme-04.png'),
             ],
         );
     }

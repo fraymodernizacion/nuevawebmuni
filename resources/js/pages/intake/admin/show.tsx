@@ -1084,6 +1084,7 @@ function Attachments({ items }: { items: Attachment[] }) {
                     const sources: Record<string, string> = {
                         initial: 'Documento original',
                         supplemental: 'Enviado después por el vecino',
+                        response: 'Documento publicado para el vecino',
                     };
 
                     return (

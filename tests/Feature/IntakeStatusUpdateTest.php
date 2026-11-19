@@ -23,7 +23,6 @@ test('status updates that ask for documents or answer the applicant require a pu
         ->and($intake->histories()->count())->toBe(0);
 })->with([
     'documentation' => [IntakeRequestStatus::NeedsDocumentation, 'Indicá qué documentación debe presentar el vecino.'],
-    'answer' => [IntakeRequestStatus::Answered, 'Escribí la respuesta que verá el vecino.'],
 ]);
 
 test('a retried update keeps one history movement and exposes only the public message', function () {
@@ -40,7 +39,7 @@ test('a retried update keeps one history movement and exposes only the public me
     $operator = User::factory()->operator()->create();
     $updateUrl = route('admin.intake.status.update', $intake);
     $payload = [
-        'status' => IntakeRequestStatus::Answered->value,
+        'status' => IntakeRequestStatus::Pending->value,
         'area' => 'Tesorería',
         'public_comment' => 'El municipio verificó tu solicitud.',
         'internal_comment' => 'Control interno realizado.',
@@ -55,18 +54,18 @@ test('a retried update keeps one history movement and exposes only the public me
     expect($movement->user_id)->toBe($operator->id)
         ->and($movement->changed_at)->not->toBeNull()
         ->and($movement->from_status)->toBe(IntakeRequestStatus::Received)
-        ->and($movement->to_status)->toBe(IntakeRequestStatus::Answered)
+        ->and($movement->to_status)->toBe(IntakeRequestStatus::Pending)
         ->and($intake->fresh()->finished_at)->toBeNull();
 
     $this->get(route('admin.intake.show', $intake))->assertInertia(fn (Assert $page) => $page
-        ->where('request.status', 'answered')
+        ->where('request.status', 'pending')
         ->where('request.histories.0.internal_comment', $payload['internal_comment'])
         ->where('request.histories.1.id', $original->id));
 
     $this->post(route('intake.public.track.submit'), ['year' => '2026', 'number' => '42', 'applicant_dni' => '30123456'])
         ->assertRedirect();
     $this->get(route('intake.public.status', $intake->public_code))->assertInertia(fn (Assert $page) => $page
-        ->where('request.status_code', 'answered')
+        ->where('request.status_code', 'pending')
         ->where('request.response.text', $payload['public_comment'])
         ->missing('request.timeline.0.internal_comment'));
 

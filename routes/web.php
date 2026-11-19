@@ -43,6 +43,12 @@ Route::post('/mesa-de-entrada/consultar', [PublicIntakeRequestController::class,
 Route::get('/mesa-de-entrada/consultar/{code}', [PublicIntakeRequestController::class, 'status'])
     ->middleware('cache.headers:private;no_store')
     ->name('intake.public.status');
+Route::get('/mesa-de-entrada/acceso/{code}', [PublicIntakeRequestController::class, 'mailAccess'])
+    ->middleware('cache.headers:private;no_store')
+    ->name('intake.public.mail-access');
+Route::get('/mesa-de-entrada/consultar/{code}/respuesta/{attachment}', [PublicIntakeRequestController::class, 'downloadResponse'])
+    ->middleware('cache.headers:private;no_store')
+    ->name('intake.public.response.download');
 Route::post('/mesa-de-entrada/consultar/{code}/documentacion', [PublicIntakeRequestController::class, 'storeDocumentation'])
     ->middleware('throttle:10,1,intake-documentation')
     ->name('intake.public.documentation.store');

@@ -45,12 +45,14 @@ const statusHelp: Record<
             'Adjuntá una copia de la última factura en el seguimiento del trámite.',
         review: 'El seguimiento mostrará el pedido y habilitará la carga de documentación.',
     },
-    answered: {
+    pending: {
         description:
-            'Registra una respuesta del municipio. La gestión puede continuar.',
-        messageRequired: 'Escribí la respuesta que verá el vecino.',
-        example:
-            'Verificamos tu solicitud. Te informaremos por este mismo seguimiento cuando el pago se acredite.',
+            'La solicitud queda pendiente de una acción para continuar.',
+    },
+    suspended: {
+        description:
+            'La gestión queda suspendida. Indicá el motivo y cómo se podrá continuar.',
+        example: 'La gestión queda suspendida hasta que se resuelva…',
     },
     finished: {
         description: 'Da por concluida la gestión del municipio.',
@@ -115,10 +117,11 @@ export default function StatusUpdateDialog({
     const submissionId = useRef<string | null>(null);
     const submitting = useRef(false);
     const form = useForm({
-        status: request.status,
+        status: request.status === 'answered' ? 'under_review' : request.status,
         area: request.area ?? '',
         public_comment: '',
         internal_comment: '',
+        response_documents: [] as File[],
     });
     const guide = statusHelp[form.data.status];
     const statusLabel =
@@ -160,14 +163,25 @@ export default function StatusUpdateDialog({
         setSaveError('');
         const id = submissionId.current ?? makeSubmissionId();
         submissionId.current = id;
-        form.transform((values) => ({ ...values, submission_id: id }));
-        form.patch(update.url(request.id), {
+        form.transform((values) => ({
+            ...values,
+            _method: 'patch',
+            submission_id: id,
+        }));
+        form.post(update.url(request.id), {
+            forceFormData: true,
             preserveScroll: true,
             onSuccess: onSaved,
             onError: (errors) => {
                 if (errors.status || errors.area) {
                     setStep(0);
-                } else if (errors.public_comment || errors.internal_comment) {
+                } else if (
+                    errors.public_comment ||
+                    errors.internal_comment ||
+                    Object.keys(errors).some((key) =>
+                        key.startsWith('response_documents'),
+                    )
+                ) {
                     setStep(1);
                 } else {
                     setSaveError(
@@ -455,6 +469,76 @@ export default function StatusUpdateDialog({
                                             message={form.errors.public_comment}
                                         />
                                     </div>
+                                    <div className="grid gap-2 rounded-lg border border-municipal-outline p-3">
+                                        <label
+                                            htmlFor="response-documents"
+                                            className="text-sm font-semibold"
+                                        >
+                                            Documentos para el vecino
+                                        </label>
+                                        <p
+                                            id="response-documents-help"
+                                            className="text-sm text-muted-foreground"
+                                        >
+                                            Publicá certificados, constancias u
+                                            otros documentos de respuesta. Hasta
+                                            5 archivos de 10 MB cada uno, en
+                                            PDF, Word, JPG, PNG o WebP.
+                                        </p>
+                                        <input
+                                            id="response-documents"
+                                            type="file"
+                                            multiple
+                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                                            className="block min-h-11 w-full min-w-0 rounded-md border p-2 text-sm"
+                                            aria-describedby="response-documents-help response-documents-errors"
+                                            aria-invalid={Object.keys(
+                                                form.errors,
+                                            ).some((key) =>
+                                                key.startsWith(
+                                                    'response_documents',
+                                                ),
+                                            )}
+                                            onChange={(event) => {
+                                                form.setData(
+                                                    'response_documents',
+                                                    Array.from(
+                                                        event.currentTarget
+                                                            .files ?? [],
+                                                    ),
+                                                );
+                                                form.clearErrors();
+                                                submissionId.current = null;
+                                            }}
+                                        />
+                                        <ul className="grid gap-1 text-sm [overflow-wrap:anywhere]">
+                                            {form.data.response_documents.map(
+                                                (file, index) => (
+                                                    <li key={index}>
+                                                        {file.name}
+                                                    </li>
+                                                ),
+                                            )}
+                                        </ul>
+                                        <div id="response-documents-errors">
+                                            {Object.entries(form.errors)
+                                                .filter(([key]) =>
+                                                    key.startsWith(
+                                                        'response_documents',
+                                                    ),
+                                                )
+                                                .map(([key, message]) => (
+                                                    <FieldError
+                                                        key={key}
+                                                        id={key.replaceAll(
+                                                            '.',
+                                                            '-',
+                                                        )}
+                                                        message={message}
+                                                    />
+                                                ))}
+                                        </div>
+                                    </div>
                                     <div className="grid gap-2 rounded-lg border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900 dark:bg-amber-950/30">
                                         <label
                                             htmlFor="status-internal-comment"
@@ -563,6 +647,23 @@ export default function StatusUpdateDialog({
                                         {publicMessage ||
                                             'Sin mensaje público en esta actualización.'}
                                     </ReviewNote>
+                                    {form.data.response_documents.length >
+                                        0 && (
+                                        <div className="grid gap-1 text-sm">
+                                            <h4 className="font-semibold">
+                                                Documentos que verá el vecino
+                                            </h4>
+                                            <ul className="list-inside list-disc [overflow-wrap:anywhere]">
+                                                {form.data.response_documents.map(
+                                                    (file, index) => (
+                                                        <li key={index}>
+                                                            {file.name}
+                                                        </li>
+                                                    ),
+                                                )}
+                                            </ul>
+                                        </div>
+                                    )}
                                     {internalNote && (
                                         <ReviewNote
                                             label="Nota interna"
@@ -585,7 +686,9 @@ export default function StatusUpdateDialog({
                                         público.
                                         {emailNotificationsEnabled &&
                                         request.applicant_email &&
-                                        form.data.status !== request.status
+                                        (form.data.status !== request.status ||
+                                            form.data.response_documents
+                                                .length > 0)
                                             ? ' Se programará un aviso por correo al vecino.'
                                             : emailNotificationsEnabled &&
                                                 !request.applicant_email
