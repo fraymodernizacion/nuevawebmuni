@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ComplaintDashboardController;
 use App\Http\Controllers\Admin\ComplaintInterventionController;
 use App\Http\Controllers\Admin\ComplaintStatusController;
 use App\Http\Controllers\Admin\IntakeConfigurationController;
+use App\Http\Controllers\Admin\IntakeDashboardController;
 use App\Http\Controllers\Admin\IntakeRequestController as AdminIntakeRequestController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\InventoryLabelController;
@@ -108,6 +109,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('admin/mesa-de-entrada')->name('admin.intake.')->group(function () {
         Route::get('/', [AdminIntakeRequestController::class, 'index'])->name('index');
+        Route::get('dashboard', IntakeDashboardController::class)->name('dashboard');
         Route::get('configuracion', [IntakeConfigurationController::class, 'index'])->name('configuration');
         Route::post('configuracion/areas', [IntakeConfigurationController::class, 'storeDepartment'])->name('configuration.departments.store');
         Route::patch('configuracion/areas/{intakeDepartment}', [IntakeConfigurationController::class, 'updateDepartment'])->name('configuration.departments.update');

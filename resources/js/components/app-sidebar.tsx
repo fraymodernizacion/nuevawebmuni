@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    BarChart3,
     ClipboardList,
     Cog,
     Inbox,
@@ -28,6 +29,7 @@ import {
 } from '@/routes/admin/complaints';
 import {
     configuration as intakeConfiguration,
+    dashboard as intakeDashboard,
     index as intakeIndex,
 } from '@/routes/admin/intake';
 import { index as inventoryIndex } from '@/routes/admin/inventory';
@@ -52,6 +54,11 @@ const mainNavItems: NavItem[] = [
         title: 'Mesa de Entrada',
         href: intakeIndex(),
         icon: Inbox,
+    },
+    {
+        title: 'Informe de Mesa',
+        href: intakeDashboard(),
+        icon: BarChart3,
     },
     {
         title: 'Config. derivaciones',
@@ -111,6 +118,7 @@ export function AppSidebar() {
             (item.title !== 'Gestión de Reclamos' ||
                 canUseComplaintManagement) &&
             (item.title !== 'Mesa de Entrada' || canUseIntakeManagement) &&
+            (item.title !== 'Informe de Mesa' || canUseIntakeManagement) &&
             (item.title !== 'Config. derivaciones' ||
                 canConfigureIntakeDerivations) &&
             (item.title !== 'Inventario' || canManageInventory) &&

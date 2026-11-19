@@ -1,8 +1,15 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Bell, ClipboardList, FileText, LoaderCircle, Search } from 'lucide-react';
+import {
+    BarChart3,
+    Bell,
+    ClipboardList,
+    FileText,
+    LoaderCircle,
+    Search,
+} from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { formatIntakeDate, intakeStatusClass } from '@/lib/intake-labels';
-import { index, notifications, show } from '@/routes/admin/intake';
+import { dashboard, index, notifications, show } from '@/routes/admin/intake';
 import { index as complaintsIndex } from '@/routes/admin/complaints';
 
 type IntakeRequest = {
@@ -24,6 +31,7 @@ type IntakeRequest = {
 
 type Props = {
     requests: {
+        total: number;
         data: IntakeRequest[];
         links: { url: string | null; label: string; active: boolean }[];
     };
@@ -46,7 +54,11 @@ type DerivationNotification = {
     operator_seen_at?: string | null;
     is_seen: boolean;
     user?: { name: string } | null;
-    department?: { name: string; secretariat?: string | null; color: string } | null;
+    department?: {
+        name: string;
+        secretariat?: string | null;
+        color: string;
+    } | null;
     assistance_type?: { name: string; color: string } | null;
     request?: {
         id: number;
@@ -124,19 +136,28 @@ export default function AdminIntakeIndex({
                             interna.
                         </p>
                     </div>
-                    <Link
-                        href={complaintsIndex()}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold"
-                    >
-                        <ClipboardList className="size-4" />
-                        Reclamos pendientes: {complaintSummary.pending}
-                    </Link>
+                    <div className="flex flex-wrap gap-2">
+                        <Link
+                            href={dashboard()}
+                            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-municipal-action px-4 font-semibold text-municipal-on-action"
+                        >
+                            <BarChart3 className="size-5" aria-hidden="true" />{' '}
+                            Informe de gestión
+                        </Link>
+                        <Link
+                            href={complaintsIndex()}
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold"
+                        >
+                            <ClipboardList className="size-4" />
+                            Reclamos pendientes: {complaintSummary.pending}
+                        </Link>
+                    </div>
                 </header>
 
                 <section className="grid gap-3 sm:grid-cols-3">
                     <Metric
-                        label="Solicitudes"
-                        value={requests.data.length.toString()}
+                        label="Solicitudes encontradas"
+                        value={requests.total.toString()}
                     />
                     <Metric
                         label="Reclamos nuevos"
@@ -211,9 +232,7 @@ export default function AdminIntakeIndex({
                     <select
                         className="input"
                         value={secretariat}
-                        onChange={(event) =>
-                            setSecretariat(event.target.value)
-                        }
+                        onChange={(event) => setSecretariat(event.target.value)}
                     >
                         <option value="">Todas las secretarias</option>
                         {secretariatOptions.map((item) => (
